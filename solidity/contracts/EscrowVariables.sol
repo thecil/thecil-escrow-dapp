@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity "0.8.26";
+pragma solidity 0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -16,7 +16,12 @@ abstract contract EscrowVariables {
     error ZeroAddressNotAllowed();
     /// @dev Insufficient balance (minimum amount)
     error InsufficientBalance(uint256);
-
+    /// @dev Token not supported
+    error TokenNotSupported(address);
+    /// @dev Only escrow tx initiator allowed
+    error onlyEscrowTxInitiatorAllowed();
+    /// @dev Active escrow tx between users (escrow tx id, user, beneficiary)
+    error ActiveEscrowTx(uint,address,address);
     /***********************************|
     |              Events               |
     |__________________________________*/
@@ -63,14 +68,35 @@ abstract contract EscrowVariables {
     |            Variables              |
     |__________________________________*/
 
-    mapping(address => uint8[]) public userEscrowsMap; // track address => escrow id
-    mapping(uint => EscrowTransaction) public escrowTxsMap; // track id to escrow tx
+    mapping(address => uint[]) public userEscrowsMap; // map address => escrow id
+    mapping(uint => EscrowTransaction) public escrowTxsMap; // map id to escrow tx
+    mapping(address => mapping(address => uint)) public activeUserBeneficiaryEscrowTxMap;
+    mapping(address => bool) public supportedTokensMap; // map supported tokens
 
     address[] public supportedTokens; // a list of supported tokens
+    uint public counterEscrowTransactions; // increase each time a tx is created, also works to get the total amount of txs and
 
     /***********************************|
     |         Getter Functions          |
     |__________________________________*/
+
+    /// @notice get the details of given escrow tx id
+    /// @dev returns the escrowTxsMap mapping.
+    /// @return EscrowTransaction details
+    function getEscrowTransaction(
+        uint _id
+    ) external view returns (EscrowTransaction memory) {
+        return escrowTxsMap[_id];
+    }
+
+    /// @notice get a list of the user escrow txs ids
+    /// @dev returns the userEscrowsMap mapping.
+    /// @return uint[] list of escrow tx ids
+    function getUserEscrows(
+        address _user
+    ) external view returns (uint[] memory) {
+        return userEscrowsMap[_user];
+    }
 
     /// @notice get a list of supported tokens by the contract.
     /// @dev returns the supportedTokens array.
