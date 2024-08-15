@@ -1,5 +1,7 @@
 import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
+import "hardhat-gas-reporter";
+import "hardhat-contract-sizer";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -24,6 +26,9 @@ const config: HardhatUserConfig = {
       }
     ]
   },
+  gasReporter: {
+    L1: "polygon",
+  }
 };
 
 export default config;

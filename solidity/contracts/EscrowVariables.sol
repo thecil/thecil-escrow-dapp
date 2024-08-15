@@ -16,12 +16,17 @@ abstract contract EscrowVariables {
     error ZeroAddressNotAllowed();
     /// @dev Insufficient balance (minimum amount)
     error InsufficientBalance(uint256);
-    /// @dev Token not supported
+    /// @dev Token not supported (token address)
     error TokenNotSupported(address);
     /// @dev Only escrow tx initiator allowed
     error onlyEscrowTxInitiatorAllowed();
     /// @dev Active escrow tx between users (escrow tx id, user, beneficiary)
-    error ActiveEscrowTx(uint,address,address);
+    error AlreadyActiveEscrowTx(uint, address, address);
+    /// @dev Incorrect escrow tx status (escrow tx id)
+    error IncorrectEscrowTxStatus(EscrowStatus);
+    /// @dev Unlock time not reached (unlock timestamp)
+    error UnlockTimeNotReached(uint);
+
     /***********************************|
     |              Events               |
     |__________________________________*/
@@ -31,17 +36,18 @@ abstract contract EscrowVariables {
     /// @param initiator the address that initiate the transaction (payer)
     /// @param tokenAddr the token address used for this transaction.
     /// @param tokenAmount the token amount deposited for this transaction.
+    /// @param unlockTime unlock time for funds.
     event TransactionCreated(
         address indexed beneficiary,
         address indexed initiator,
         address tokenAddr,
-        uint256 tokenAmount
+        uint256 tokenAmount,
+        uint unlockTime
     );
 
     /// @notice Event triggered when an escrow transaction is approved
     /// @param id escrow transaction id.
-    /// @param unlockTime unlock time for funds.
-    event TransactionApproved(uint id, uint unlockTime);
+    event TransactionApproved(uint id);
 
     /***********************************|
     |          Structs & Enums          |
@@ -50,17 +56,23 @@ abstract contract EscrowVariables {
     enum EscrowStatus {
         Created,
         Approved,
-        Completed,
         Canceled,
         Dispute
     }
 
     /// @dev Escrow Transaction struct
+    /// @param beneficiary receiver of funds (seller).
+    /// @param initiator creator of escrow tx (buyer).
+    /// @param tokenAddr token address used on this escrow tx, if zero Address means Ether as asset
+    /// @param tokenAmount deposit amount of the asset used on this escrow tx.
+    /// @param unlockTime unlock time for funds.
+    /// @param status escrow tx status.
     struct EscrowTransaction {
         address payable beneficiary;
         address initiator;
         address tokenAddr;
         uint256 tokenAmount;
+        uint unlockTime;
         EscrowStatus status;
     }
 
@@ -70,7 +82,8 @@ abstract contract EscrowVariables {
 
     mapping(address => uint[]) public userEscrowsMap; // map address => escrow id
     mapping(uint => EscrowTransaction) public escrowTxsMap; // map id to escrow tx
-    mapping(address => mapping(address => uint)) public activeUserBeneficiaryEscrowTxMap;
+    mapping(address => mapping(address => uint))
+        public activeUserBeneficiaryEscrowTxMap; // map user address => beneficiary address => active estrow id
     mapping(address => bool) public supportedTokensMap; // map supported tokens
 
     address[] public supportedTokens; // a list of supported tokens
@@ -79,6 +92,16 @@ abstract contract EscrowVariables {
     /***********************************|
     |         Getter Functions          |
     |__________________________________*/
+
+    /// @notice Get the active escrow tx between 2 accounts
+    /// @dev returns the activeUserBeneficiaryEscrowTxMap mapping.
+    /// @return uint active escrow tx id
+    function getActiveEscrowTransaction(
+        address _accountOne,
+        address _accountTwo
+    ) external view returns (uint) {
+        return activeUserBeneficiaryEscrowTxMap[_accountOne][_accountTwo];
+    }
 
     /// @notice get the details of given escrow tx id
     /// @dev returns the escrowTxsMap mapping.
@@ -112,7 +135,7 @@ abstract contract EscrowVariables {
         return address(this).balance;
     }
 
-    /// @notice Token balance of contract
+    /// @notice Token balance of the contract
     /// @dev returns the token balance of contract for given token address
     /// @return balance of token in wei
     function getContractBalanceOf(

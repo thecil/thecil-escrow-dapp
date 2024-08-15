@@ -2,7 +2,9 @@
   "name": "hardhat-project",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
-    "hardhat": "^2.22.8"
+    "hardhat": "^2.22.8",
+    "hardhat-contract-sizer": "^2.10.0",
+    "hardhat-gas-reporter": "^2.2.1"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.2"

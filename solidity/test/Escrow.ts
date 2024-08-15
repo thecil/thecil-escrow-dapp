@@ -1,10 +1,12 @@
 import {
-  time,
+  mine,
   loadFixture,
+  time,
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 import { parseEther, getAddress } from "viem";
+import { unixNow, timeToUnix } from "./unix-time";
 describe("Escrow", function () {
   // We define a fixture to reuse the same setup in every test.
   // We use loadFixture to run this setup once, snapshot that state,
@@ -30,14 +32,14 @@ describe("Escrow", function () {
   }
 
   describe("Deployment", function () {
-    it("Should set the deployer as owner", async function () {
+    it("ESCROW: Should set the deployer as owner", async function () {
       const { escrowContract, owner } = await loadFixture(deployEscrowFixture);
       expect(await escrowContract.read.owner()).to.equal(
         getAddress(owner.account.address)
       );
     });
 
-    it("Should Mint tokens to accounts", async function () {
+    it("TOKEN: Should Mint tokens to accounts", async function () {
       const { tokenContract, acc1, acc2 } = await loadFixture(
         deployEscrowFixture
       );
@@ -76,9 +78,10 @@ describe("Escrow", function () {
       const { escrowContract, owner, acc1, publicClient } = await loadFixture(
         deployEscrowFixture
       );
-
+      // 1 minute time lock
+      const _timeLock = unixNow() + timeToUnix(1, "minutes");
       const hash = await escrowContract.write.createEscrowTransactionWithEther(
-        [acc1.account.address],
+        [acc1.account.address, BigInt(_timeLock)],
         { value: parseEther("1") }
       );
       await publicClient.waitForTransactionReceipt({ hash });
@@ -99,6 +102,12 @@ describe("Escrow", function () {
       );
 
       // verify mappings
+      expect(
+        await escrowContract.read.getActiveEscrowTransaction([
+          owner.account.address,
+          acc1.account.address,
+        ])
+      ).to.equal(1n);
       const userEscrowsMap = await escrowContract.read.getUserEscrows([
         owner.account.address,
       ]);
@@ -121,9 +130,61 @@ describe("Escrow", function () {
       // should not allow to create a new escrow tx with same users while there is another escrow tx active
       await expect(
         escrowContract.write.createEscrowTransactionWithEther(
-          [acc1.account.address],
+          [acc1.account.address, BigInt(_timeLock)],
           { value: parseEther("1") }
         )
+      ).to.be.rejectedWith();
+    });
+
+    it("Should create and approve after timelock", async function () {
+      const { escrowContract, owner, acc1, publicClient } = await loadFixture(
+        deployEscrowFixture
+      );
+      // 1 minute time lock
+      const _timeLock = unixNow() + timeToUnix(1, "seconds");
+      await escrowContract.write.createEscrowTransactionWithEther(
+        [acc1.account.address, BigInt(_timeLock)],
+        { value: parseEther("1") }
+      );
+      const _activeTxId = await escrowContract.read.getActiveEscrowTransaction([
+        owner.account.address,
+        acc1.account.address,
+      ]);
+      await mine(2, { interval: 1000 });
+
+      // balance before approval
+      const _balanceAcc1Before = await publicClient.getBalance({
+        address: acc1.account.address,
+        blockTag: "safe",
+      });
+
+      const hash = await escrowContract.write.approveEscrowTransaction([
+        _activeTxId,
+      ]);
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      // emit event
+      const transactionApprovedEvent =
+        await escrowContract.getEvents.TransactionApproved();
+      expect(transactionApprovedEvent).to.have.lengthOf(1);
+      expect(transactionApprovedEvent[0].args.id).to.equal(_activeTxId);
+
+      // verify status of id
+      const _escrowTx = escrowContract.read.getEscrowTransaction([_activeTxId]);
+      expect((await _escrowTx).status).to.equal(1);
+
+      // verify contract balance
+      expect(await escrowContract.read.getContractEtherBalance()).to.equal(0n);
+      // balance after approval
+      const _balanceAcc1After = await publicClient.getBalance({
+        address: acc1.account.address,
+        blockTag: "safe",
+      });
+      expect(_balanceAcc1Before + parseEther("1")).to.equal(_balanceAcc1After);
+
+      // should fail because tx has been approved
+      await expect(
+        escrowContract.write.approveEscrowTransaction([_activeTxId])
       ).to.be.rejectedWith();
     });
   });

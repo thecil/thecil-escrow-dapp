@@ -22,8 +22,9 @@ contract Escrow is EscrowVariables, Ownable, Pausable, ReentrancyGuard {
     function createEscrowTransactionWithToken(
         address _beneficiary,
         address _tokenAddr,
-        uint256 _tokenAmount
-    ) external {
+        uint256 _tokenAmount,
+        uint _unlockTime
+    ) external whenNotPaused {
         // verify token is supported
         if (supportedTokensMap[_tokenAddr] == false)
             revert TokenNotSupported(_tokenAddr);
@@ -33,22 +34,16 @@ contract Escrow is EscrowVariables, Ownable, Pausable, ReentrancyGuard {
         EscrowTransaction memory _escrowTransaction = escrowTxsMap[
             _escrowActiveTxId
         ];
-        // verify if beneficiary and msg.sender have an active transaction.
+        // escrow tx is on status created or Dispute, must be completed to in order to create a new one
         if (
-            _escrowTransaction.beneficiary == _beneficiary &&
-            _escrowTransaction.initiator == _msgSender()
-        ) {
-            // escrow tx is on status created or approved, must be completed to in order to create a new one
-            if (
-                _escrowTransaction.status == EscrowStatus.Created ||
-                _escrowTransaction.status == EscrowStatus.Approved
-            )
-                revert ActiveEscrowTx(
-                    _escrowActiveTxId,
-                    _msgSender(),
-                    _beneficiary
-                );
-        }
+            _escrowTransaction.status == EscrowStatus.Created ||
+            _escrowTransaction.status == EscrowStatus.Dispute
+        )
+            revert AlreadyActiveEscrowTx(
+                _escrowActiveTxId,
+                _msgSender(),
+                _beneficiary
+            );
         // increase tx counter to get a new number for this tx as id
         counterEscrowTransactions++;
         IERC20 token = IERC20(_tokenAddr);
@@ -63,6 +58,7 @@ contract Escrow is EscrowVariables, Ownable, Pausable, ReentrancyGuard {
             _msgSender(),
             _tokenAddr,
             _tokenAmount,
+            _unlockTime,
             EscrowStatus.Created
         );
         // add tx to escrows map
@@ -71,36 +67,33 @@ contract Escrow is EscrowVariables, Ownable, Pausable, ReentrancyGuard {
             _beneficiary,
             _msgSender(),
             _tokenAddr,
-            _tokenAmount
+            _tokenAmount,
+            _unlockTime
         );
     }
 
     // create a new escrow tx using ether
     function createEscrowTransactionWithEther(
-        address _beneficiary
-    ) external payable {
+        address _beneficiary,
+        uint _unlockTime
+    ) external payable whenNotPaused {
         uint _escrowActiveTxId = activeUserBeneficiaryEscrowTxMap[_msgSender()][
             _beneficiary
         ];
         EscrowTransaction memory _escrowTransaction = escrowTxsMap[
             _escrowActiveTxId
         ];
-        // verify if beneficiary and msg.sender have an active transaction.
+        // verify if beneficiary and msg.sender have an active tx.
         if (
-            _escrowTransaction.beneficiary == _beneficiary &&
-            _escrowTransaction.initiator == _msgSender()
-        ) {
-            // escrow tx is on status created or approved, must be completed to in order to create a new one
-            if (
-                _escrowTransaction.status == EscrowStatus.Created ||
-                _escrowTransaction.status == EscrowStatus.Approved
-            )
-                revert ActiveEscrowTx(
-                    _escrowActiveTxId,
-                    _msgSender(),
-                    _beneficiary
-                );
-        }
+            _escrowActiveTxId > 0 &&
+            _escrowTransaction.status == EscrowStatus.Created ||
+            _escrowTransaction.status == EscrowStatus.Dispute
+        )
+            revert AlreadyActiveEscrowTx(
+                _escrowActiveTxId,
+                _msgSender(),
+                _beneficiary
+            );
         // increase tx counter to get a new number for this tx as id
         counterEscrowTransactions++;
         // add tx id to users map
@@ -115,6 +108,7 @@ contract Escrow is EscrowVariables, Ownable, Pausable, ReentrancyGuard {
             _msgSender(),
             address(0),
             msg.value,
+            _unlockTime,
             EscrowStatus.Created
         );
         // add tx to escrows map
@@ -123,10 +117,38 @@ contract Escrow is EscrowVariables, Ownable, Pausable, ReentrancyGuard {
             _beneficiary,
             _msgSender(),
             address(0),
-            msg.value
+            msg.value,
+            _unlockTime
         );
     }
 
+    // approve an escrow tx id
+    function approveEscrowTransaction(
+        uint _escrowTxId
+    ) external nonReentrant whenNotPaused {
+        EscrowTransaction storage _escrowTx = escrowTxsMap[_escrowTxId];
+        if (_msgSender() != _escrowTx.initiator)
+            revert onlyEscrowTxInitiatorAllowed();
+        if (block.timestamp < _escrowTx.unlockTime)
+            revert UnlockTimeNotReached(_escrowTx.unlockTime);
+        if (_escrowTx.status != EscrowStatus.Created)
+            revert IncorrectEscrowTxStatus(_escrowTx.status);
+        _escrowTx.status = EscrowStatus.Approved;
+        // zero address is Ether
+        if (_escrowTx.tokenAddr == address(0)) {
+            _escrowTx.beneficiary.transfer(_escrowTx.tokenAmount);
+            // non zero address is token address
+        } else {
+            IERC20 token = IERC20(_escrowTx.tokenAddr);
+            // transfer funds
+            token.transferFrom(
+                address(this),
+                _escrowTx.beneficiary,
+                _escrowTx.tokenAmount
+            );
+        }
+        emit TransactionApproved(_escrowTxId);
+    }
     // done: define statuses of escrow transaction.
     // todo: define arbiter type. (not sure where it will fit yet).
     // todo: use aave to  yield funds while in escrow transaction.
