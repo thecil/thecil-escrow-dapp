@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IAToken} from "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
 /// @title An abstract contract that includes all variables of its parents.
 /// @author thecil - Carlos Zambrano
@@ -14,7 +15,7 @@ abstract contract EscrowVariables {
 
     /// @dev Zero address not allowed
     error ZeroAddressNotAllowed();
-    /// @dev Insufficient balance (minimum amount)
+    /// @dev Insufficient balance (minimum value)
     error InsufficientBalance(uint256);
     /// @dev Token not supported (token address)
     error TokenNotSupported(address);
@@ -24,8 +25,11 @@ abstract contract EscrowVariables {
     error AlreadyActiveEscrowTx(uint, address, address);
     /// @dev Incorrect escrow tx status (escrow tx id)
     error IncorrectEscrowTxStatus(EscrowStatus);
-    /// @dev Unlock time not reached (unlock timestamp)
-    error UnlockTimeNotReached(uint);
+    /// @dev Unlock time not reached (unlock timestamp, actual timestamp)
+    error UnlockTimeNotReached(uint, uint);
+    /// @dev Error withdraw  from pool (tokenAddr, value, receiver)
+    error ErrorWithdrawFromPool(address, uint256, address);
+
 
     /***********************************|
     |              Events               |
@@ -84,9 +88,6 @@ abstract contract EscrowVariables {
     mapping(uint => EscrowTransaction) public escrowTxsMap; // map id to escrow tx
     mapping(address => mapping(address => uint))
         public activeUserBeneficiaryEscrowTxMap; // map user address => beneficiary address => active estrow id
-    mapping(address => bool) public supportedTokensMap; // map supported tokens
-
-    address[] public supportedTokens; // a list of supported tokens
     uint public counterEscrowTransactions; // increase each time a tx is created, also works to get the total amount of txs and
 
     /***********************************|
@@ -121,13 +122,6 @@ abstract contract EscrowVariables {
         return userEscrowsMap[_user];
     }
 
-    /// @notice get a list of supported tokens by the contract.
-    /// @dev returns the supportedTokens array.
-    /// @return address[] list of addresses
-    function getSupportedTokens() external view returns (address[] memory) {
-        return supportedTokens;
-    }
-
     /// @notice Ether balance of the contract
     /// @dev returns the ether funds holded by the contract
     /// @return balance of ether in wei
@@ -142,6 +136,16 @@ abstract contract EscrowVariables {
         address _tokenAddr
     ) external view returns (uint256) {
         IERC20 token = IERC20(_tokenAddr);
+        return token.balanceOf(address(this));
+    }
+
+    /// @notice aave Atoken balance of the contract
+    /// @dev returns the token balance of contract for given aave Atoken address
+    /// @return balance of token in wei
+    function getContractAtokenBalanceOf(
+        address _tokenAddr
+    ) external view returns (uint256) {
+        IAToken token = IAToken(_tokenAddr);
         return token.balanceOf(address(this));
     }
 }

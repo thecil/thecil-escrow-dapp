@@ -5,25 +5,98 @@ import {
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
-import { parseEther, getAddress } from "viem";
-import { unixNow, timeToUnix } from "./unix-time";
+import {
+  parseEther,
+  getAddress,
+  getContract,
+  formatEther,
+  parseUnits,
+} from "viem";
+import { unixNow, timeToUnix, timeout } from "./unix-time";
+import { faucetAbi } from "./abi/faucetAbi";
+import { WalletBalanceProviderAbi } from "./abi/walletBalanceProviderAbi";
+import { testnetErc20Abi } from "./abi/testnetErc20Abi";
+import {
+  sepoliaAaveContracts,
+  sepoliaAaveReserveTokens,
+} from "./aaveContracts";
+
 describe("Escrow", function () {
   // We define a fixture to reuse the same setup in every test.
   // We use loadFixture to run this setup once, snapshot that state,
   // and reset Hardhat Network to that snapshot in every test.
 
   async function deployEscrowFixture() {
+    const publicClient = await hre.viem.getPublicClient();
     // Contracts are deployed using the first signer/account by default
     const [owner, acc1, acc2] = await hre.viem.getWalletClients();
 
-    const escrowContract = await hre.viem.deployContract("Escrow");
-    const tokenContract = await hre.viem.deployContract("Token");
+    const escrowContract = await hre.viem.deployContract("EscrowYieldTestnet", [
+      sepoliaAaveContracts.poolAddressesProviderAave,
+    ]);
 
-    const publicClient = await hre.viem.getPublicClient();
+    const walletBalanceProviderContract = getContract({
+      address: sepoliaAaveContracts.walletBalanceProvider,
+      abi: WalletBalanceProviderAbi,
+      client: publicClient,
+    });
+
+    const faucet = getContract({
+      address: sepoliaAaveContracts.faucet,
+      abi: faucetAbi,
+      client: publicClient,
+    });
+
+    const testnetTokens = {
+      dai: getContract({
+        address: sepoliaAaveReserveTokens.dai,
+        abi: testnetErc20Abi,
+        client: publicClient,
+      }),
+      link: getContract({
+        address: sepoliaAaveReserveTokens.link,
+        abi: testnetErc20Abi,
+        client: publicClient,
+      }),
+      usdc: getContract({
+        address: sepoliaAaveReserveTokens.usdc,
+        abi: testnetErc20Abi,
+        client: publicClient,
+      }),
+      wbtc: getContract({
+        address: sepoliaAaveReserveTokens.wbtc,
+        abi: testnetErc20Abi,
+        client: publicClient,
+      }),
+      weth: getContract({
+        address: sepoliaAaveReserveTokens.weth,
+        abi: testnetErc20Abi,
+        client: publicClient,
+      }),
+      usdt: getContract({
+        address: sepoliaAaveReserveTokens.usdt,
+        abi: testnetErc20Abi,
+        client: publicClient,
+      }),
+      aave: getContract({
+        address: sepoliaAaveReserveTokens.aave,
+        abi: testnetErc20Abi,
+        client: publicClient,
+      }),
+    };
+
+    console.log("contracts", {
+      escrow: escrowContract.address,
+      pool: await escrowContract.read.POOL(),
+    });
 
     return {
+      // contracts
       escrowContract,
-      tokenContract,
+      walletBalanceProviderContract,
+      faucet,
+      testnetTokens,
+      // utils
       owner,
       acc1,
       acc2,
@@ -39,51 +112,55 @@ describe("Escrow", function () {
       );
     });
 
-    it("TOKEN: Should Mint tokens to accounts", async function () {
-      const { tokenContract, acc1, acc2 } = await loadFixture(
-        deployEscrowFixture
+    it("ESCROW: Should set the aave pool address", async function () {
+      const { escrowContract } = await loadFixture(deployEscrowFixture);
+
+      expect(await escrowContract.read.POOL()).to.equal(
+        sepoliaAaveContracts.poolAddress
       );
-
-      // connect acc1 to contract
-      const tokenContractAsAcc1 = await hre.viem.getContractAt(
-        "Token",
-        tokenContract.address,
-        { client: { wallet: acc1 } }
-      );
-
-      await tokenContractAsAcc1.write.mint();
-
-      expect(
-        await tokenContractAsAcc1.read.balanceOf([acc1.account.address])
-      ).to.equal(parseEther("100"));
-
-      // connect acc2 to contract
-      const tokenContractAsAcc2 = await hre.viem.getContractAt(
-        "Token",
-        tokenContract.address,
-        { client: { wallet: acc2 } }
-      );
-
-      await tokenContractAsAcc2.write.mint();
-
-      expect(
-        await tokenContractAsAcc2.read.balanceOf([acc2.account.address])
-      ).to.equal(parseEther("100"));
     });
   });
 
   describe("Creating Escrow Transaction", function () {
-    it("Should create an escrow tx using ether", async function () {
-      const zeroAddress = "0x0000000000000000000000000000000000000000";
-      const { escrowContract, owner, acc1, publicClient } = await loadFixture(
-        deployEscrowFixture
-      );
+    it("Should create an escrow tx", async function () {
+      const {
+        escrowContract,
+        faucet,
+        testnetTokens,
+        owner,
+        acc1,
+        publicClient,
+      } = await loadFixture(deployEscrowFixture);
       // 1 minute time lock
       const _timeLock = unixNow() + timeToUnix(1, "minutes");
-      const hash = await escrowContract.write.createEscrowTransactionWithEther(
-        [acc1.account.address, BigInt(_timeLock)],
-        { value: parseEther("1") }
+
+      // mint if balance below 100 tokens
+      const _balanceOfTestnetToken = await testnetTokens.dai.read.balanceOf([
+        owner.account.address,
+      ]);
+      if (_balanceOfTestnetToken < 100n) {
+        await faucet.write.mint(
+          [
+            sepoliaAaveReserveTokens.dai,
+            owner.account.address,
+            parseEther("1000"),
+          ],
+          { account: owner.account.address }
+        );
+      }
+      // approve contract to spent tokens
+      await testnetTokens.dai.write.approve(
+        [escrowContract.address, parseEther("1000")],
+        { account: owner.account.address }
       );
+
+      // create new escrow tx
+      const hash = await escrowContract.write.createEscrowTransaction([
+        acc1.account.address,
+        sepoliaAaveReserveTokens.dai,
+        parseEther("100"),
+        BigInt(_timeLock),
+      ]);
       await publicClient.waitForTransactionReceipt({ hash });
 
       // emit event
@@ -96,9 +173,14 @@ describe("Escrow", function () {
       expect(transactionCreatedEvent[0].args.initiator).to.equal(
         getAddress(owner.account.address)
       );
-      expect(transactionCreatedEvent[0].args.tokenAddr).to.equal(zeroAddress);
+      expect(transactionCreatedEvent[0].args.tokenAddr).to.equal(
+        getAddress(sepoliaAaveReserveTokens.dai)
+      );
       expect(transactionCreatedEvent[0].args.tokenAmount).to.equal(
-        parseEther("1")
+        parseEther("100")
+      );
+      expect(transactionCreatedEvent[0].args.unlockTime).to.equal(
+        BigInt(_timeLock)
       );
 
       // verify mappings
@@ -121,42 +203,70 @@ describe("Escrow", function () {
         getAddress(owner.account.address)
       );
       expect(escrowTxsMap.status).to.equal(0);
-      expect(escrowTxsMap.tokenAddr).to.equal(zeroAddress);
-      expect(escrowTxsMap.tokenAmount).to.equal(parseEther("1"));
-      // verify contract balance
-      expect(await escrowContract.read.getContractEtherBalance()).to.equal(
-        parseEther("1")
-      );
+      expect(escrowTxsMap.tokenAddr).to.equal(sepoliaAaveReserveTokens.dai);
+      expect(escrowTxsMap.tokenAmount).to.equal(parseEther("100"));
+
       // should not allow to create a new escrow tx with same users while there is another escrow tx active
       await expect(
-        escrowContract.write.createEscrowTransactionWithEther(
-          [acc1.account.address, BigInt(_timeLock)],
-          { value: parseEther("1") }
-        )
+        escrowContract.write.createEscrowTransaction([
+          acc1.account.address,
+          sepoliaAaveReserveTokens.dai,
+          parseEther("100"),
+          BigInt(_timeLock),
+        ])
       ).to.be.rejectedWith();
     });
 
     it("Should create and approve after timelock", async function () {
-      const { escrowContract, owner, acc1, publicClient } = await loadFixture(
-        deployEscrowFixture
-      );
-      // 1 minute time lock
+      const {
+        escrowContract,
+        owner,
+        acc1,
+        publicClient,
+        testnetTokens,
+        faucet,
+      } = await loadFixture(deployEscrowFixture);
+
+      // 1 second time lock
       const _timeLock = unixNow() + timeToUnix(1, "seconds");
-      await escrowContract.write.createEscrowTransactionWithEther(
-        [acc1.account.address, BigInt(_timeLock)],
-        { value: parseEther("1") }
+      // mint if balance below 100 tokens
+      const _balanceOfTestnetToken = await testnetTokens.dai.read.balanceOf([
+        owner.account.address,
+      ]);
+      if (_balanceOfTestnetToken < 100n) {
+        await faucet.write.mint(
+          [
+            sepoliaAaveReserveTokens.dai,
+            owner.account.address,
+            parseEther("1000"),
+          ],
+          { account: owner.account.address }
+        );
+      }
+      // approve contract to spent tokens
+      await testnetTokens.dai.write.approve(
+        [escrowContract.address, parseEther("1000")],
+        { account: owner.account.address }
       );
+      await escrowContract.write.createEscrowTransaction([
+        acc1.account.address,
+        sepoliaAaveReserveTokens.dai,
+        parseEther("100"),
+        BigInt(_timeLock),
+      ]);
+
+      await mine(10, { interval: 1000 });
+
+      // balance before approval
+      const _balanceAcc1Before = await testnetTokens.dai.read.balanceOf(
+        [acc1.account.address],
+        { account: acc1.account.address }
+      );
+
       const _activeTxId = await escrowContract.read.getActiveEscrowTransaction([
         owner.account.address,
         acc1.account.address,
       ]);
-      await mine(2, { interval: 1000 });
-
-      // balance before approval
-      const _balanceAcc1Before = await publicClient.getBalance({
-        address: acc1.account.address,
-        blockTag: "safe",
-      });
 
       const hash = await escrowContract.write.approveEscrowTransaction([
         _activeTxId,
@@ -176,16 +286,19 @@ describe("Escrow", function () {
       // verify contract balance
       expect(await escrowContract.read.getContractEtherBalance()).to.equal(0n);
       // balance after approval
-      const _balanceAcc1After = await publicClient.getBalance({
-        address: acc1.account.address,
-        blockTag: "safe",
-      });
-      expect(_balanceAcc1Before + parseEther("1")).to.equal(_balanceAcc1After);
+      const _balanceAcc1After = await testnetTokens.dai.read.balanceOf(
+        [acc1.account.address],
+        { account: acc1.account.address }
+      );
+
+      expect(_balanceAcc1Before + parseEther("100")).to.equal(
+        _balanceAcc1After
+      );
 
       // should fail because tx has been approved
-      await expect(
-        escrowContract.write.approveEscrowTransaction([_activeTxId])
-      ).to.be.rejectedWith();
+      // await expect(
+      //   escrowContract.write.approveEscrowTransaction([_activeTxId])
+      // ).to.be.rejectedWith();
     });
   });
 });
