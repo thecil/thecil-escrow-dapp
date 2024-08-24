@@ -11,6 +11,7 @@ import {
   getContract,
   formatEther,
   parseUnits,
+  erc20Abi,
 } from "viem";
 import { unixNow, timeToUnix, timeout } from "./unix-time";
 import { faucetAbi } from "./abi/faucetAbi";
@@ -19,6 +20,7 @@ import { testnetErc20Abi } from "./abi/testnetErc20Abi";
 import {
   sepoliaAaveContracts,
   sepoliaAaveReserveTokens,
+  sepoliaAaveAtokens
 } from "./aaveContracts";
 
 describe("Escrow", function () {
@@ -85,6 +87,46 @@ describe("Escrow", function () {
       }),
     };
 
+    
+
+    const aTokensAave = {
+      dai: getContract({
+        address: sepoliaAaveAtokens.dai,
+        abi: erc20Abi,
+        client: publicClient,
+      }),
+      link: getContract({
+        address: sepoliaAaveAtokens.link,
+        abi: erc20Abi,
+        client: publicClient,
+      }),
+      usdc: getContract({
+        address: sepoliaAaveAtokens.usdc,
+        abi: erc20Abi,
+        client: publicClient,
+      }),
+      wbtc: getContract({
+        address: sepoliaAaveAtokens.wbtc,
+        abi: erc20Abi,
+        client: publicClient,
+      }),
+      weth: getContract({
+        address: sepoliaAaveAtokens.weth,
+        abi: erc20Abi,
+        client: publicClient,
+      }),
+      usdt: getContract({
+        address: sepoliaAaveAtokens.usdt,
+        abi: erc20Abi,
+        client: publicClient,
+      }),
+      aave: getContract({
+        address: sepoliaAaveAtokens.aave,
+        abi: erc20Abi,
+        client: publicClient,
+      }),
+    };
+
     console.log("contracts", {
       escrow: escrowContract.address,
       pool: await escrowContract.read.POOL(),
@@ -96,6 +138,7 @@ describe("Escrow", function () {
       walletBalanceProviderContract,
       faucet,
       testnetTokens,
+      aTokensAave,
       // utils
       owner,
       acc1,
@@ -225,6 +268,8 @@ describe("Escrow", function () {
         publicClient,
         testnetTokens,
         faucet,
+        walletBalanceProviderContract,
+        aTokensAave
       } = await loadFixture(deployEscrowFixture);
 
       // 1 second time lock
