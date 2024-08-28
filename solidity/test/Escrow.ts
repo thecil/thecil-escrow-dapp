@@ -9,8 +9,6 @@ import {
   parseEther,
   getAddress,
   getContract,
-  formatEther,
-  parseUnits,
   erc20Abi,
 } from "viem";
 import { unixNow, timeToUnix, timeout } from "./unix-time";
@@ -20,7 +18,7 @@ import { testnetErc20Abi } from "./abi/testnetErc20Abi";
 import {
   sepoliaAaveContracts,
   sepoliaAaveReserveTokens,
-  sepoliaAaveAtokens
+  sepoliaAaveAtokens,
 } from "./aaveContracts";
 
 describe("Escrow", function () {
@@ -87,8 +85,6 @@ describe("Escrow", function () {
       }),
     };
 
-    
-
     const aTokensAave = {
       dai: getContract({
         address: sepoliaAaveAtokens.dai,
@@ -148,14 +144,14 @@ describe("Escrow", function () {
   }
 
   describe("Deployment", function () {
-    it("ESCROW: Should set the deployer as owner", async function () {
+    it("Should set the deployer as owner", async function () {
       const { escrowContract, owner } = await loadFixture(deployEscrowFixture);
       expect(await escrowContract.read.owner()).to.equal(
         getAddress(owner.account.address)
       );
     });
 
-    it("ESCROW: Should set the aave pool address", async function () {
+    it("Should set the aave pool address", async function () {
       const { escrowContract } = await loadFixture(deployEscrowFixture);
 
       expect(await escrowContract.read.POOL()).to.equal(
@@ -268,8 +264,6 @@ describe("Escrow", function () {
         publicClient,
         testnetTokens,
         faucet,
-        walletBalanceProviderContract,
-        aTokensAave
       } = await loadFixture(deployEscrowFixture);
 
       // 1 second time lock
@@ -341,9 +335,94 @@ describe("Escrow", function () {
       );
 
       // should fail because tx has been approved
-      // await expect(
-      //   escrowContract.write.approveEscrowTransaction([_activeTxId])
-      // ).to.be.rejectedWith();
+      await expect(
+        escrowContract.write.approveEscrowTransaction([_activeTxId])
+      ).to.be.rejectedWith();
     });
+
+    it("Should create and cancel an escrow tx", async function () {
+      const {
+        escrowContract,
+        faucet,
+        testnetTokens,
+        owner,
+        acc1,
+        publicClient,
+      } = await loadFixture(deployEscrowFixture);
+      // 1 minute time lock
+      const _timeLock = unixNow() + timeToUnix(1, "minutes");
+
+      // mint if balance below 100 tokens
+      const _balanceOfTestnetToken = await testnetTokens.dai.read.balanceOf([
+        owner.account.address,
+      ]);
+      if (_balanceOfTestnetToken < 100n) {
+        await faucet.write.mint(
+          [
+            sepoliaAaveReserveTokens.dai,
+            owner.account.address,
+            parseEther("1000"),
+          ],
+          { account: owner.account.address }
+        );
+      }
+      // approve contract to spent tokens
+      await testnetTokens.dai.write.approve(
+        [escrowContract.address, parseEther("1000")],
+        { account: owner.account.address }
+      );
+
+      await escrowContract.write.createEscrowTransaction([
+        acc1.account.address,
+        sepoliaAaveReserveTokens.dai,
+        parseEther("100"),
+        BigInt(_timeLock),
+      ]);
+
+      // balance before cancel
+      const _balanceOwnerBefore = await testnetTokens.dai.read.balanceOf(
+        [owner.account.address],
+        { account: owner.account.address }
+      );
+
+      const _activeTxId = await escrowContract.read.getActiveEscrowTransaction([
+        owner.account.address,
+        acc1.account.address,
+      ]);
+      // should reject cancel if method is called by beneficiary or any other account
+      const escrowContractAsOtherAccount = await hre.viem.getContractAt(
+        "EscrowYieldTestnet",
+        escrowContract.address,
+        { client: { wallet: acc1 } }
+      );
+      await expect(
+        escrowContractAsOtherAccount.write.cancelEscrowTransaction([
+          _activeTxId,
+        ])
+      ).to.be.rejectedWith("");
+      // cancel escrow tx
+      const hash = await escrowContract.write.cancelEscrowTransaction([
+        _activeTxId,
+      ]);
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      // emit event
+      const transactionCanceledEvent =
+        await escrowContract.getEvents.TransactionCanceled();
+      expect(transactionCanceledEvent).to.have.lengthOf(1);
+      expect(transactionCanceledEvent[0].args.id).to.equal(_activeTxId);
+
+      // balance after cancel
+      const _balanceOwnerAfter = await testnetTokens.dai.read.balanceOf(
+        [owner.account.address],
+        { account: owner.account.address }
+      );
+
+      expect(_balanceOwnerBefore + parseEther("100")).to.equal(
+        _balanceOwnerAfter
+      );
+    });
+
+    it("Should create and dispute an escrow tx", async function () {});
   });
 });

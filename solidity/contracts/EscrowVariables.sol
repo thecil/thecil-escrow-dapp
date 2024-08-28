@@ -10,6 +10,22 @@ import {IAToken} from "@aave/core-v3/contracts/interfaces/IAToken.sol";
 /// @dev It store all variable declarations for better view of parent contract.
 abstract contract EscrowVariables {
     /***********************************|
+    |            Modifiers              |
+    |__________________________________*/
+    modifier validateEscrowTx(
+        address _msgSender,
+        uint _escrowTxId,
+        EscrowStatus _status
+    ) {
+        // verify escrow tx
+        EscrowTransaction storage _escrowTx = escrowTxsMap[_escrowTxId];
+        if (_msgSender != _escrowTx.initiator)
+            revert OnlyEscrowTxInitiatorAllowed();
+        if (_escrowTx.status != _status)
+            revert IncorrectEscrowTxStatus(_escrowTx.status);
+        _;
+    }
+    /***********************************|
     |              Erros                |
     |__________________________________*/
 
@@ -20,7 +36,7 @@ abstract contract EscrowVariables {
     /// @dev Token not supported (token address)
     error TokenNotSupported(address);
     /// @dev Only escrow tx initiator allowed
-    error onlyEscrowTxInitiatorAllowed();
+    error OnlyEscrowTxInitiatorAllowed();
     /// @dev Active escrow tx between users (escrow tx id, user, beneficiary)
     error AlreadyActiveEscrowTx(uint, address, address);
     /// @dev Incorrect escrow tx status (escrow tx id)
@@ -29,7 +45,6 @@ abstract contract EscrowVariables {
     error UnlockTimeNotReached(uint, uint);
     /// @dev Error withdraw  from pool (tokenAddr, value, receiver)
     error ErrorWithdrawFromPool(address, uint256, address);
-
 
     /***********************************|
     |              Events               |
@@ -52,6 +67,14 @@ abstract contract EscrowVariables {
     /// @notice Event triggered when an escrow transaction is approved
     /// @param id escrow transaction id.
     event TransactionApproved(uint id);
+
+    /// @notice Event triggered when an escrow transaction is disputed
+    /// @param id escrow transaction id.
+    event TransactionDisputed(uint id);
+
+    /// @notice Event triggered when an escrow transaction is canceled
+    /// @param id escrow transaction id.
+    event TransactionCanceled(uint id);
 
     /***********************************|
     |          Structs & Enums          |

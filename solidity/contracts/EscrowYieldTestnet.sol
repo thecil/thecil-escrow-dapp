@@ -39,8 +39,6 @@ contract EscrowYieldTestnet is
         POOL = IPool(ADDRESSES_PROVIDER.getPool());
     }
 
-    // todo: allow to create an escrow transaction with many users.
-
     // create a new escrow tx using a token
     function createEscrowTransaction(
         address _beneficiary,
@@ -105,8 +103,7 @@ contract EscrowYieldTestnet is
                 )
             );
 
-            if (!successApprove)
-                revert("approve error");
+            if (!successApprove) revert("approve error");
         }
         // supply tokens to pool as caller: contract
         (bool successSupply, ) = address(POOL).call(
@@ -119,7 +116,6 @@ contract EscrowYieldTestnet is
             )
         );
         if (successSupply == false) revert("error supply");
-        // END TODO
 
         // increase tx counter to get a new number for this tx as id
         counterEscrowTransactions++;
@@ -152,34 +148,105 @@ contract EscrowYieldTestnet is
     // approve an escrow tx id
     function approveEscrowTransaction(
         uint _escrowTxId
-    ) external nonReentrant whenNotPaused {
+    )
+        public
+        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Created)
+        whenNotPaused
+    {
         // verify escrow tx
         EscrowTransaction storage _escrowTx = escrowTxsMap[_escrowTxId];
-        if (_msgSender() != _escrowTx.initiator)
-            revert onlyEscrowTxInitiatorAllowed();
         if (block.timestamp < _escrowTx.unlockTime)
             revert UnlockTimeNotReached(_escrowTx.unlockTime, block.timestamp);
-        if (_escrowTx.status != EscrowStatus.Created)
-            revert IncorrectEscrowTxStatus(_escrowTx.status);
         // mark escrow tx as approved
         _escrowTx.status = EscrowStatus.Approved;
-        // approve pool to spent tokens as caller: contract
+        // withdraw atokens and send token to escrow beneficiary, as caller: contract
+        _withdrawFromPool(
+            _escrowTx.tokenAddr,
+            _escrowTx.tokenAmount,
+            _escrowTx.beneficiary
+        );
+        emit TransactionApproved(_escrowTxId);
+    }
+
+    // cancel an escrow tx id
+    function cancelEscrowTransaction(
+        uint _escrowTxId
+    )
+        public
+        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Created)
+        whenNotPaused
+    {
+        // verify escrow tx
+        EscrowTransaction storage _escrowTx = escrowTxsMap[_escrowTxId];
+        // mark escrow tx as approved
+        _escrowTx.status = EscrowStatus.Canceled;
+        // withdraw funds back to escrow tx initiator
+        _withdrawFromPool(
+            _escrowTx.tokenAddr,
+            _escrowTx.tokenAmount,
+            _escrowTx.initiator
+        );
+        emit TransactionCanceled(_escrowTxId);
+    }
+
+    // change an escrow tx to Dispute status
+    function initiateDispute(
+        uint _escrowTxId
+    )
+        external
+        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Created)
+        whenNotPaused
+    {
+        // verify escrow tx
+        EscrowTransaction storage _escrowTx = escrowTxsMap[_escrowTxId];
+        // change tx status to Dispute
+        _escrowTx.status = EscrowStatus.Dispute;
+        emit TransactionDisputed(_escrowTxId);
+    }
+
+    // close dispute and approve escrow tx
+    function closeDisputeAndApprove(
+        uint _escrowTxId
+    )
+        external
+        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Dispute)
+        whenNotPaused
+    {
+        // verify escrow tx
+        EscrowTransaction storage _escrowTx = escrowTxsMap[_escrowTxId];
+        // change status to Created
+        _escrowTx.status = EscrowStatus.Created;
+        // approve escrow tx id
+        approveEscrowTransaction(_escrowTxId);
+    }
+    // close dispute and cancel escrow tx
+    function closeDisputeAndCancel(
+        uint _escrowTxId
+    )
+        external
+        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Dispute)
+        whenNotPaused
+    {
+        cancelEscrowTransaction(_escrowTxId);
+    }
+
+    // withdraw atokens and send token to address(_to), as caller: contract
+    function _withdrawFromPool(
+        address _tokenAddr,
+        uint256 _tokenAmount,
+        address _to
+    ) internal nonReentrant whenNotPaused {
         (bool successWithdraw, ) = address(POOL).call(
             abi.encodeWithSignature(
                 "withdraw(address,uint256,address)",
-                _escrowTx.tokenAddr,
-                _escrowTx.tokenAmount,
-                _escrowTx.beneficiary
+                _tokenAddr,
+                _tokenAmount,
+                _to
             )
         );
 
         if (!successWithdraw)
-            revert ErrorWithdrawFromPool(
-                _escrowTx.tokenAddr,
-                _escrowTx.tokenAmount,
-                _escrowTx.beneficiary
-            );
-        emit TransactionApproved(_escrowTxId);
+            revert ErrorWithdrawFromPool(_tokenAddr, _tokenAmount, _to);
     }
 
     // transfer tokens from contract to given address
@@ -211,12 +278,11 @@ contract EscrowYieldTestnet is
     }
 
     receive() external payable {}
+
+    // done: allow to create an escrow transaction with many users.
     // done: define statuses of escrow transaction.
-    // todo: define arbiter type. (not sure where it will fit yet).
-    // todo: use aave to  yield funds while in escrow transaction.
-    // todo: multiple tokens (list of supported tokens).
-    // todo: custom rules, allowing to withdraw initially a % of the funds.
-    // todo: custom rules, timelock withdrawals.
-    // todo: custom rules, "commitment fee" (request the beneficiary of the funds to deposit a commitment fee, if they failed the rules of the business agreement, they lost the fee as penalty, this way they will not waste my time nor my txs fee for creating an escrow tx).
+    // done: use aave to  yield funds while in escrow transaction.
+    // done: multiple tokens (list of supported tokens from aave).
+    // done: custom rules, timelock withdrawals.
     // todo: maybe vesting wallet.
 }
