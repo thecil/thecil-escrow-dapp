@@ -423,6 +423,75 @@ describe("Escrow", function () {
       );
     });
 
-    it("Should create and dispute an escrow tx", async function () {});
+    it.only("Should create and dispute an escrow tx", async function () {
+      const {
+        escrowContract,
+        faucet,
+        testnetTokens,
+        owner,
+        acc1,
+        publicClient,
+      } = await loadFixture(deployEscrowFixture);
+      // 1 minute time lock
+      const _timeLock = unixNow() + timeToUnix(1, "minutes");
+
+      // mint if balance below 100 tokens
+      const _balanceOfTestnetToken = await testnetTokens.dai.read.balanceOf([
+        owner.account.address,
+      ]);
+      if (_balanceOfTestnetToken < 100n) {
+        await faucet.write.mint(
+          [
+            sepoliaAaveReserveTokens.dai,
+            owner.account.address,
+            parseEther("1000"),
+          ],
+          { account: owner.account.address }
+        );
+      }
+      // approve contract to spent tokens
+      await testnetTokens.dai.write.approve(
+        [escrowContract.address, parseEther("1000")],
+        { account: owner.account.address }
+      );
+
+      await escrowContract.write.createEscrowTransaction([
+        acc1.account.address,
+        sepoliaAaveReserveTokens.dai,
+        parseEther("100"),
+        BigInt(_timeLock),
+      ]);
+
+      const _activeTxId = await escrowContract.read.getActiveEscrowTransaction([
+        owner.account.address,
+        acc1.account.address,
+      ]);
+      // should reject cancel if method is called by beneficiary or any other account
+      const escrowContractAsOtherAccount = await hre.viem.getContractAt(
+        "EscrowYieldTestnet",
+        escrowContract.address,
+        { client: { wallet: acc1 } }
+      );
+
+      await expect(
+        escrowContractAsOtherAccount.write.initiateDispute([
+          _activeTxId,
+        ])
+      ).to.be.rejectedWith("");
+
+      // dispute escrow tx
+      const hash = await escrowContract.write.initiateDispute([
+        _activeTxId,
+      ]);
+
+      // expect the receipt to be successful
+      expect((await publicClient.waitForTransactionReceipt({ hash })).status).to.equal('success');     
+
+      // emit event
+      const transactionDisputedEvent =
+        await escrowContract.getEvents.TransactionDisputed();
+      expect(transactionDisputedEvent).to.have.lengthOf(1);
+      expect(transactionDisputedEvent[0].args.id).to.equal(_activeTxId);
+    });
   });
 });
