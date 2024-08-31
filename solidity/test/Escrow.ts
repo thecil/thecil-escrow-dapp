@@ -11,7 +11,7 @@ import {
   getContract,
   erc20Abi,
 } from "viem";
-import { unixNow, timeToUnix, timeout } from "./unix-time";
+import { unixNow, timeToUnix, timeout } from "./utils/unix-time";
 import { faucetAbi } from "./abi/faucetAbi";
 import { WalletBalanceProviderAbi } from "./abi/walletBalanceProviderAbi";
 import { testnetErc20Abi } from "./abi/testnetErc20Abi";
@@ -19,7 +19,7 @@ import {
   sepoliaAaveContracts,
   sepoliaAaveReserveTokens,
   sepoliaAaveAtokens,
-} from "./aaveContracts";
+} from "./utils/aaveContracts";
 
 describe("Escrow", function () {
   // We define a fixture to reuse the same setup in every test.
