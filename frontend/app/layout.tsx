@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { Toaster } from "@/components/ui/sonner";
 import Providers from "@/components/providers";
 import Header from "@/components/header";
+import Footer from "@/components/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
         <Providers cookie={headers().get("cookie") ?? ""}>
           <Header/>
           <main className="container min-h-screen p-4">{children}</main>
+          <Footer />
           <Toaster position="top-center" richColors />
         </Providers>
       </body>

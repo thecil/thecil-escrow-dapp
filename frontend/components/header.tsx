@@ -23,7 +23,7 @@ const Header: React.FC = () => {
           <video autoPlay loop muted className="w-12 rounded">
             <source src="/au_video.mp4" />
           </video>
-          <p className={"text-3xl text-green-500"}>Escrow Dapp</p>
+          <p className={"text-3xl"}>Escrow Dapp</p>
         </Link>
         {isMobile ? (
           <DropdownMenu>
