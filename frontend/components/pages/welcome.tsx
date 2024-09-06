@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { LockIcon, ShieldIcon, TrendingUpIcon } from "lucide-react";
 import Image from "next/image";
 
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 export default function WelcomePage() {
   return (
     <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
@@ -24,12 +24,20 @@ export default function WelcomePage() {
         </p>
         <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
           <div className="rounded-md shadow">
-            <Button
-              variant="outline"
-              className="w-full flex items-center justify-center px-8 py-3 text-base font-medium "
-            >
-              Start Your First Escrow
-            </Button>
+            <ConnectButton.Custom>
+              {({ openConnectModal }) => {
+                return (
+                  <Button
+                    variant="outline"
+                    className="w-full flex items-center justify-center px-8 py-3 text-base font-medium "
+                    onMouseDown={openConnectModal}
+                    type="button"
+                  >
+                    Start Your First Escrow
+                  </Button>
+                );
+              }}
+            </ConnectButton.Custom>
           </div>
         </div>
       </motion.div>
@@ -111,13 +119,20 @@ export default function WelcomePage() {
               Join the future of secure transactions. Our smart contract escrow
               service is ready to safeguard your next deal.
             </p>
-            <Button
-              variant="outline"
-              className="w-full flex items-center justify-center px-8 py-3 text-base font-medium "
-            >
-              {" "}
-              Get Started Now
-            </Button>
+            <ConnectButton.Custom>
+              {({ openConnectModal }) => {
+                return (
+                  <Button
+                    variant="outline"
+                    className="w-full flex items-center justify-center px-8 py-3 text-base font-medium "
+                    onMouseDown={openConnectModal}
+                    type="button"
+                  >
+                    Get Started Now
+                  </Button>
+                );
+              }}
+            </ConnectButton.Custom>
           </div>
         </div>
         <div className="-mt-6 aspect-w-5 aspect-h-3 md:aspect-w-2 md:aspect-h-1">
