@@ -20,13 +20,9 @@ const Header: React.FC = () => {
     <header className="container mb-4 border-b md:p-4">
       <div className="flex items-center justify-between">
         <Link href={"/"} className="flex items-center space-x-2">
-          <Image
-            alt="ddmesh-logo"
-            src="/logo.svg"
-            width={25}
-            height={25}
-            className={"h-10 w-10"}
-          />
+          <video autoPlay loop muted className="w-12 rounded">
+            <source src="/au_video.mp4" />
+          </video>
           <p className={"text-3xl text-green-500"}>Escrow Dapp</p>
         </Link>
         {isMobile ? (
@@ -45,9 +41,7 @@ const Header: React.FC = () => {
           </DropdownMenu>
         ) : (
           <div className="flex items-center space-x-2">
-            <ConnectButton
-                label="Connect"
-            />
+            <ConnectButton label="Connect" accountStatus={"address"} />
             <ModeToggle />
           </div>
         )}
