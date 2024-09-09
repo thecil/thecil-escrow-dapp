@@ -15,8 +15,6 @@ import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/c
 import {Errors} from "@aave/core-v3/contracts/protocol/libraries/helpers/Errors.sol";
 import "./EscrowVariables.sol";
 
-import "hardhat/console.sol";
-
 /// @title An escrow contract with yield from aave
 /// @author thecil - Carlos Zambrano
 /// @notice Allow an user to create an escrow transaction with a timelock and in the mean time, the funds are being yield on AAVE.
@@ -39,7 +37,11 @@ contract EscrowYieldTestnet is
         POOL = IPool(ADDRESSES_PROVIDER.getPool());
     }
 
-    // create a new escrow tx using a token
+    /// @notice Create a new escrow tx using a token
+    /// @param _beneficiary receiver of funds (seller).
+    /// @param _tokenAddr token address used on this escrow tx, if zero Address means Ether as asset
+    /// @param _tokenAmount deposit amount of the asset used on this escrow tx.
+    /// @param _unlockTime unlock time for funds.
     function createEscrowTransaction(
         address _beneficiary,
         address _tokenAddr,
@@ -145,7 +147,8 @@ contract EscrowYieldTestnet is
         );
     }
 
-    // approve an escrow tx id
+    /// @notice Approve an active escrow tx, funds will be transfered to beneficiary
+    /// @param _escrowTxId Escrow transaction id.
     function approveEscrowTransaction(
         uint _escrowTxId
     )
@@ -168,7 +171,8 @@ contract EscrowYieldTestnet is
         emit TransactionApproved(_escrowTxId);
     }
 
-    // cancel an escrow tx id
+    /// @notice Cancel an active escrow tx, funds will be transfered to initiator
+    /// @param _escrowTxId Escrow transaction id.
     function cancelEscrowTransaction(
         uint _escrowTxId
     )
@@ -189,7 +193,8 @@ contract EscrowYieldTestnet is
         emit TransactionCanceled(_escrowTxId);
     }
 
-    // change an escrow tx to Dispute status
+    /// @notice Change an escrow tx to Dispute status
+    /// @param _escrowTxId Escrow transaction id.
     function initiateDispute(
         uint _escrowTxId
     )
@@ -204,7 +209,8 @@ contract EscrowYieldTestnet is
         emit TransactionDisputed(_escrowTxId);
     }
 
-    // close dispute and approve escrow tx
+    /// @notice Close dispute and approve escrow tx
+    /// @param _escrowTxId Escrow transaction id.
     function closeDisputeAndApprove(
         uint _escrowTxId
     )
@@ -219,7 +225,9 @@ contract EscrowYieldTestnet is
         // approve escrow tx id
         approveEscrowTransaction(_escrowTxId);
     }
-    // close dispute and cancel escrow tx
+
+    /// @notice Close dispute and cancel escrow tx
+    /// @param _escrowTxId Escrow transaction id.
     function closeDisputeAndCancel(
         uint _escrowTxId
     )
@@ -259,7 +267,8 @@ contract EscrowYieldTestnet is
         token.transferFrom(address(this), _to, _amount);
     }
 
-    // Returns the user account data across all the reserves
+    /// @notice Returns the user account data across all the reserves
+    /// @param _user user account address.
     function getUserAccountData(
         address _user
     )
