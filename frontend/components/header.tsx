@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { ModeToggle } from "./theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { useScreenSize } from "@/hooks/use-screen-size";
 import { Menu } from "lucide-react";
