@@ -9,7 +9,7 @@ import { ThemeProvider } from "next-themes";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { hashFn } from "wagmi/query";
 import { wagmiConfig } from "@/config/wagmi-config";
-import { structuralSharing } from '@wagmi/core/query';
+import { structuralSharing } from "@wagmi/core/query";
 
 type Props = {
   children: ReactNode;
@@ -28,8 +28,8 @@ const Providers = ({ children, cookie }: Props) => {
             gcTime: 60 * 1000, // 60 secs
             queryKeyHashFn: hashFn,
             structuralSharing
-          },
-        },
+          }
+        }
       }),
   );
   const initialState = cookieToInitialState(wagmiConfig, cookie);

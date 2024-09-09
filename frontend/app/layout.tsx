@@ -12,11 +12,11 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Escrow Dapp",
-  description: "Alchemy University Escrow Dapp",
+  description: "Alchemy University Escrow Dapp"
 };
 
 export default function RootLayout({
-  children,
+  children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
