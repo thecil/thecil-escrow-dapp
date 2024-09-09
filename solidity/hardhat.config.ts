@@ -2,6 +2,7 @@ import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
 import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
+import "hardhat-docgen";
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -46,6 +47,11 @@ const config: HardhatUserConfig = {
   gasReporter: {
     L1: "ethereum",
   },
+  docgen: {
+    path: './docs',
+    clear: true,
+    runOnCompile: true,
+  }
 };
 
 export default config;
