@@ -17,6 +17,9 @@ import {
   TableRow
 } from "@/components/ui/table";
 import NewEscrowTx from "../new-escrow-tx";
+import { useReadEscrow } from "@/hooks/contracts/use-read-escrow";
+import Faucet from "../faucet";
+
 const transactions = [
   {
     id: 1,
@@ -57,13 +60,13 @@ const transactions = [
 
 export default function EscrowDashboard() {
   const [filter, setFilter] = useState("All");
-
+  const { contractEtherBalance } = useReadEscrow();
   const filteredTransactions =
     filter === "All"
       ? transactions
       : transactions.filter((t) => t.status === filter);
 
-  const totalEscrow = transactions.reduce((sum, t) => sum + t.amount, 0);
+  // const totalEscrow = transactions.reduce((sum, t) => sum + t.amount, 0);
   const pendingEscrow = transactions
     .filter((t) => t.status === "Pending")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -73,7 +76,7 @@ export default function EscrowDashboard() {
 
   return (
     <main className="grid gap-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+      <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -81,9 +84,7 @@ export default function EscrowDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${totalEscrow.toLocaleString()}
-            </div>
+            <div className="text-2xl font-bold">ETH {contractEtherBalance}</div>
           </CardContent>
         </Card>
         <Card>
@@ -111,13 +112,13 @@ export default function EscrowDashboard() {
           </CardContent>
         </Card>
       </div>
-
+      <Faucet />
       <div>
         <NewEscrowTx />
       </div>
-      <Card className="mb-8">
+      <Card>
         <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
+          <CardTitle>Step 3 - Manage Your Escrow Transactions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex justify-between mb-4">
@@ -136,6 +137,7 @@ export default function EscrowDashboard() {
               </SelectContent>
             </Select>
           </div>
+
           <Table>
             <TableHeader>
               <TableRow>

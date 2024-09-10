@@ -42,7 +42,7 @@ const Providers = ({ children, cookie }: Props) => {
           </ThemeProvider>
         </RainbowKitProvider>
       </WagmiProvider>
-      <ReactQueryDevtools initialIsOpen={false} buttonPosition="top-left" />
+      <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
     </QueryClientProvider>
   );
 };

@@ -8,7 +8,7 @@ import WelcomePage from "./welcome";
 const MainPage = () => {
   const { isConnected } = useAccount();
   return (
-    <div className="container">
+    <div>
       {isConnected ? <Dashboard /> : <WelcomePage/>}
     </div>
   );
