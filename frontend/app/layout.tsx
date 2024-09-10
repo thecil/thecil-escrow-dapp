@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers cookie={headers().get("cookie") ?? ""}>
           <Header/>
-          <main className="container min-h-screen p-4">{children}</main>
+          <main className="min-h-screen md:container">{children}</main>
           <Footer />
           <Toaster position="top-center" richColors />
         </Providers>
