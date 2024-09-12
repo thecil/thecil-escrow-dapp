@@ -28,7 +28,7 @@ export const newEscrowSchema = z.object({
       (date) => date > new Date(),
       "Date must be higher than actual time."
     )
-    .transform((date) => toUnixTime(date))
+    // .transform((date) => toUnixTime(date))
 });
 
 export type NewEscrowSchemaFormInputs = z.infer<typeof newEscrowSchema>;
