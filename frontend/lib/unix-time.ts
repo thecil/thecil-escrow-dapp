@@ -11,6 +11,12 @@ export const toUnixTime = (date: Date) => {
 
 export const unixNow = () => toUnixTime(new Date());
 
+export const unixToDateTime = (unixTime: number) => {
+  if (unixTime === 0 || unixTime === undefined) return null;
+  const date = new Date(unixTime * MS);
+  return date;
+};
+
 export const timeToUnix = (
   amount: number,
   unit: "seconds" | "minutes" | "days" | "weeks"
