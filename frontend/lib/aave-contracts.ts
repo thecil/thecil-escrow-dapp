@@ -45,11 +45,11 @@ export const sepoliaAaveReserveTokens: AaveTokens[] = [
     address: "0x29f2D40B0605204364af54EC677bD022dA425d03",
     img:"/wrapped-bitcoin-wbtc-logo.png"
   },
-  {
-    name: "Weth",
-    address: "0xC558DBdd856501FCd9aaF1E62eae57A9F0629a3c",
-    img:"/ethereum-eth-logo.png"
-  },
+  // {
+  //   name: "Weth",
+  //   address: "0xC558DBdd856501FCd9aaF1E62eae57A9F0629a3c",
+  //   img:"/ethereum-eth-logo.png"
+  // },
   {
     name: "Usdt",
     address: "0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0",
@@ -84,11 +84,11 @@ export const sepoliaAaveAtokens: AaveTokens[] = [
     address: "0x1804Bf30507dc2EB3bDEbbbdd859991EAeF6EefF",
     img:"/wrapped-bitcoin-wbtc-logo.png"
   },
-  {
-    name: "Weth",
-    address: "0x5b071b590a59395fE4025A0Ccc1FcC931AAc1830",
-    img:"/ethereum-eth-logo.png"
-  },
+  // {
+  //   name: "Weth",
+  //   address: "0x5b071b590a59395fE4025A0Ccc1FcC931AAc1830",
+  //   img:"/ethereum-eth-logo.png"
+  // },
   {
     name: "Usdt",
     address: "0xAF0F6e8b0Dc5c913bbF4d14c22B4E78Dd14310B6",
