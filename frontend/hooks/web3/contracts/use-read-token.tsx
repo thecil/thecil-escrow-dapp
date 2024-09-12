@@ -1,21 +1,18 @@
 "use client";
 
-import { useReadContract, useAccount } from "wagmi";
+import { useReadContract, useAccount, useChainId } from "wagmi";
 import { testnetErc20Abi } from "@/lib/abis/testnetErc20-abi";
 import { Address, formatUnits } from "@/lib/web3-utils";
+import { useState } from "react";
 
-export const useReadToken = ({
-  tokenAddress,
-  chainId,
-  allowanceSpender,
-  tokenBalanceOf
-}: {
-  tokenAddress: Address;
-  chainId: number;
-    allowanceSpender?: Address;
-    tokenBalanceOf?: Address;
-}) => {
+export const useReadToken = () => {
+  const [tokenAddress, setTokenAddress] = useState<Address | undefined>();
+  const [allowanceSpender, setTokenAllowanceSpender] = useState<
+    Address | undefined
+  >();
+  const [tokenBalanceOf, setTokenBalanceOf] = useState<Address | undefined>();
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
   const contractInfo = {
     address: tokenAddress,
     abi: testnetErc20Abi,
@@ -28,7 +25,10 @@ export const useReadToken = ({
 
   const { data: decimals } = useReadContract({
     ...contractInfo,
-    functionName: "decimals"
+    functionName: "decimals",
+    query: {
+      enabled: Boolean(tokenAddress)
+    }
   });
 
   const {
@@ -81,6 +81,7 @@ export const useReadToken = ({
   });
 
   return {
+    decimals,
     allowance,
     refetchAllowance,
     isLoadingAllowance,
@@ -93,6 +94,11 @@ export const useReadToken = ({
     refetchBalanceOfAddress,
     isLoadingBalanceOfAddress,
     isErrorBalanceOfAddress,
-    decimals
+    tokenAddress,
+    allowanceSpender,
+    tokenBalanceOf,
+    setTokenAddress,
+    setTokenAllowanceSpender,
+    setTokenBalanceOf
   };
 };

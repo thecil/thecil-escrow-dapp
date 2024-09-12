@@ -14,7 +14,6 @@ import { faucetAbi } from "@/lib/abis/faucet-abi";
 import {
   BaseError,
   useAccount,
-  useChainId,
   useWaitForTransactionReceipt,
   useWriteContract
 } from "wagmi";
@@ -28,12 +27,19 @@ import { cn } from "@/lib/utils";
 // controls show balance and minting
 const TokenController = ({ token }: { token: AaveTokens }) => {
   const { address } = useAccount();
-  const chainId = useChainId();
   const {
+    setTokenAddress,
     balanceOfConnectedAccount,
     refetchBalanceOfConnectedAccount,
     decimals
-  } = useReadToken({ tokenAddress: token.address, chainId });
+  } = useReadToken();
+
+  useEffect(() => {
+    if (!decimals) {
+      setTokenAddress(token.address);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decimals]);
 
   const {
     data: mintingHash,
@@ -138,7 +144,12 @@ const Faucet = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle><div className="flex gap-2 items-center"><Coins className="h-6 w-6"/><p>Step 1 - Token Balances</p></div></CardTitle>
+        <CardTitle>
+          <div className="flex gap-2 items-center">
+            <Coins className="h-6 w-6" />
+            <p>Step 1 - Token Balances</p>
+          </div>
+        </CardTitle>
         <CardDescription className="w-48 md:w-full">
           Check your token balances or mint tokens if your empty.
         </CardDescription>
