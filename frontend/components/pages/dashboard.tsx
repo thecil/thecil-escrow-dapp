@@ -9,14 +9,14 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table";
+// import {
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableHead,
+//   TableHeader,
+//   TableRow
+// } from "@/components/ui/table";
 import NewEscrowTx from "../web3/new-escrow-tx";
 import Faucet from "../web3/faucet";
 
@@ -61,10 +61,10 @@ const transactions = [
 export default function EscrowDashboard() {
   const [filter, setFilter] = useState("All");
   const { contractEtherBalance } = useReadEscrow();
-  const filteredTransactions =
-    filter === "All"
-      ? transactions
-      : transactions.filter((t) => t.status === filter);
+  // const filteredTransactions =
+  //   filter === "All"
+  //     ? transactions
+  //     : transactions.filter((t) => t.status === filter);
 
   // const totalEscrow = transactions.reduce((sum, t) => sum + t.amount, 0);
   const pendingEscrow = transactions
