@@ -2,8 +2,7 @@
 
 import { useReadContract, useAccount } from "wagmi";
 import { testnetErc20Abi } from "@/lib/abis/testnetErc20-abi";
-import { Address } from "@/lib/web3-utils";
-import { formatUnits } from "viem";
+import { Address, formatUnits } from "@/lib/web3-utils";
 
 export const useReadToken = ({
   tokenAddress,
