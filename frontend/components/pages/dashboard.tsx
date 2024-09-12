@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useReadEscrow } from "@/hooks/web3/contracts/use-read-escrow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,9 +17,8 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import NewEscrowTx from "../new-escrow-tx";
-import { useReadEscrow } from "@/hooks/contracts/use-read-escrow";
-import Faucet from "../faucet";
+import NewEscrowTx from "../web3/new-escrow-tx";
+import Faucet from "../web3/faucet";
 
 const transactions = [
   {

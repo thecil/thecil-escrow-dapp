@@ -7,49 +7,33 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 
 import Image from "next/image";
-import { testnetErc20Abi } from "@/lib/abis/testnetErc20-abi";
 import { faucetAbi } from "@/lib/abis/faucet-abi";
 import {
   BaseError,
   useAccount,
-  useReadContract,
+  useChainId,
   useWaitForTransactionReceipt,
   useWriteContract
 } from "wagmi";
-import { Address, formatUnits, parseUnits } from "@/lib/web3-utils";
+import { Address, parseUnits } from "@/lib/web3-utils";
 import { sepoliaAaveContracts } from "@/lib/aave-contracts";
 import { toast } from "sonner";
+import { useReadToken } from "@/hooks/web3/contracts/use-read-token";
+import { FileSignature, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // controls show balance and minting
 const TokenController = ({ token }: { token: AaveTokens }) => {
-  const { address, isConnected } = useAccount();
-  const { data: tokenBalance, refetch: refetchTokenBalance } = useReadContract({
-    address: token.address as Address,
-    abi: testnetErc20Abi,
-    chainId: 11155111,
-    functionName: "balanceOf",
-    args: [address as Address],
-    query: {
-      // select(data) {
-      //   return formatEther(data);
-      // },
-      enabled: isConnected
-    }
-  });
-
-  const { data: tokenDecimals } =
-    useReadContract({
-      address: token.address as Address,
-      abi: testnetErc20Abi,
-      chainId: 11155111,
-      functionName: "decimals",
-      query: {
-        enabled: isConnected
-      }
-    });
+  const { address } = useAccount();
+  const chainId = useChainId();
+  const {
+    balanceOfConnectedAccount,
+    refetchBalanceOfConnectedAccount,
+    decimals
+  } = useReadToken({ tokenAddress: token.address, chainId });
 
   const {
     data: mintingHash,
@@ -77,7 +61,7 @@ const TokenController = ({ token }: { token: AaveTokens }) => {
         args: [
           token.address,
           address as Address,
-          parseUnits("1000", tokenDecimals as number)
+          parseUnits("1000", decimals as number)
         ]
       },
       {
@@ -88,7 +72,7 @@ const TokenController = ({ token }: { token: AaveTokens }) => {
         onError: (error) => {
           console.log("mintToken:onError:", { error });
           toast.error(
-            `Error on minting: ${
+            `Error on minting: ${token.name} - ${
               (error as BaseError).shortMessage || error.message
             }`
           );
@@ -99,16 +83,21 @@ const TokenController = ({ token }: { token: AaveTokens }) => {
   // triggers transaction confirmations
   useEffect(() => {
     if (isConfirmedMinting) {
-      toast.success(
-        `Enter Agreement transaction success, \n Hash:${mintingHash}`
-      );
-      refetchTokenBalance();
+      toast.success(`Minting transaction success, \n Hash:${mintingHash}`);
+      refetchBalanceOfConnectedAccount();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConfirmedMinting]);
 
+  const mintTxStatusColor = (): string => {
+    return isPendingMinting
+      ? "border-blue-900 border-2"
+      : isConfirmingMinting
+        ? "border-green-900 border-2"
+        : "border";
+  };
   return (
-    <div className="grid gap-1 border rounded-md p-4 h-24">
+    <div className={cn(mintTxStatusColor(), "grid gap-1  rounded-md p-4 h-24")}>
       <div className="flex gap-2 items-center">
         <Image
           width={100}
@@ -119,19 +108,29 @@ const TokenController = ({ token }: { token: AaveTokens }) => {
         />
         <p className="font-semibold">{token.name}</p>
       </div>
-      {tokenBalance &&
-      tokenDecimals &&
-      tokenBalance > parseUnits("1", tokenDecimals as number) ? (
-          <p>{Number(formatUnits(tokenBalance, tokenDecimals)).toFixed(2)}</p>
-        ) : (
-          <Button
-            disabled={isPendingMinting || isConfirmingMinting}
-            variant={"outline"}
-            onMouseDown={handleMinting}
-          >
-            {isPendingMinting || isConfirmingMinting ? "Minting" : "Mint"}
-          </Button>
-        )}
+      {balanceOfConnectedAccount && balanceOfConnectedAccount > "1" ? (
+        <p>{balanceOfConnectedAccount}</p>
+      ) : (
+        <Button
+          disabled={isPendingMinting || isConfirmingMinting}
+          variant={"outline"}
+          onMouseDown={handleMinting}
+        >
+          <div className="flex items-center space-x-1">
+            {isPendingMinting ? (
+              <FileSignature className="mr-2 h-4 w-4 animate-ping" />
+            ) : null}
+            {isConfirmingMinting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            <p>
+              {isPendingMinting ? "Signing Tx" : null}
+              {isConfirmingMinting ? "Minting" : null}
+              {!isPendingMinting && !isConfirmingMinting ? "Mint" : null}
+            </p>
+          </div>
+        </Button>
+      )}
     </div>
   );
 };
