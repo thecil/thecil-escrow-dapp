@@ -16,9 +16,9 @@ const Header: React.FC = () => {
   const { isMobile } = useScreenSize();
 
   return (
-    <header className="container mb-4 border-b md:p-4">
+    <header className="container mb-4 border-b p-4">
       <div className="flex items-center justify-between">
-        <Link href={"/"} className="flex items-center space-x-2">
+        <Link href={"/"} className="flex items-center space-x-2 ">
           <video autoPlay loop muted className="w-12 rounded">
             <source src="/au_video.mp4" />
           </video>

@@ -18,6 +18,7 @@ export const useReadEscrow = () => {
     ...contractInfo,
     functionName: "escrowTxsMap"
   });
+
   const {
     data: contractEtherBalance,
     refetch: refetchContractEtherBalance,

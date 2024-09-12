@@ -76,7 +76,7 @@ export default function EscrowDashboard() {
 
   return (
     <main className="grid gap-4">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -138,7 +138,7 @@ export default function EscrowDashboard() {
             </Select>
           </div>
 
-          <Table>
+          {/* <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Description</TableHead>
@@ -169,7 +169,7 @@ export default function EscrowDashboard() {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+          </Table> */}
         </CardContent>
       </Card>
     </main>

@@ -22,7 +22,7 @@ import { Address, parseUnits } from "@/lib/web3-utils";
 import { sepoliaAaveContracts } from "@/lib/aave-contracts";
 import { toast } from "sonner";
 import { useReadToken } from "@/hooks/web3/contracts/use-read-token";
-import { FileSignature, Loader2 } from "lucide-react";
+import { Coins, FileSignature, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // controls show balance and minting
@@ -67,7 +67,7 @@ const TokenController = ({ token }: { token: AaveTokens }) => {
       {
         onSuccess: (data) => {
           console.log("mintToken:onSuccess:", { data });
-          toast.info("Mint transaction signed, waiting for confirmation");
+          toast.info(`Mint ${token.name} tx signed, waiting for confirmation`);
         },
         onError: (error) => {
           console.log("mintToken:onError:", { error });
@@ -83,7 +83,7 @@ const TokenController = ({ token }: { token: AaveTokens }) => {
   // triggers transaction confirmations
   useEffect(() => {
     if (isConfirmedMinting) {
-      toast.success(`Minting transaction success, \n Hash:${mintingHash}`);
+      toast.success(`Minting ${token.name} success, \n Hash:${mintingHash}`);
       refetchBalanceOfConnectedAccount();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -138,7 +138,7 @@ const Faucet = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Step 1 - Token Balances</CardTitle>
+        <CardTitle><div className="flex gap-2 items-center"><Coins className="h-6 w-6"/><p>Step 1 - Token Balances</p></div></CardTitle>
         <CardDescription className="w-48 md:w-full">
           Check your token balances or mint tokens if your empty.
         </CardDescription>
