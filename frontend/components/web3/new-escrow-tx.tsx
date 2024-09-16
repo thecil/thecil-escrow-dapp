@@ -1,15 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import React, { useEffect } from "react";
-import { toast } from "sonner";
 
+import React, { useEffect, useMemo } from "react";
+import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {
   type BaseError,
   useWriteContract,
   useChainId,
-  useWaitForTransactionReceipt
+  useWaitForTransactionReceipt,
+  useAccount
 } from "wagmi";
 import { useReadToken } from "@/hooks/web3/contracts/use-read-token";
 import {
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "../ui/button";
-import { FileSignature, Loader2 } from "lucide-react";
+import { FileSignature, Loader2, TriangleAlert } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -52,20 +52,44 @@ import { sepoliaAaveReserveTokens } from "@/lib/aave-contracts";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { Address, parseUnits } from "viem";
+import { EscrowAbi } from "@/lib/abis/escrow-abi";
+import { testnetErc20Abi } from "@/lib/abis/testnetErc20-abi";
+import { toUnixTime } from "@/lib/unix-time";
+import { useReadEscrow } from "@/hooks/web3/contracts/use-read-escrow";
+import { useScreenSize } from "@/hooks/use-screen-size";
+import { shortAddress } from "@/lib/web3-utils";
 
 const NewEscrowTxForm = () => {
+  const { isMobile } = useScreenSize();
   const chainId = useChainId();
-
+  const { address } = useAccount();
+  const { refetchEscrowTxsMap } = useReadEscrow();
   const {
-    allowanceSpender,
     tokenAddress,
     setTokenAddress,
     setTokenAllowanceSpender,
     allowance,
+    refetchAllowance,
     balanceOfConnectedAccount,
     refetchBalanceOfConnectedAccount,
     decimals
   } = useReadToken();
+
+  const {
+    data: approveHash,
+    isPending: isPendingApprove,
+    writeContract: approveEscrowContract
+  } = useWriteContract();
+
+  const { isLoading: isConfirmingApproval, isSuccess: isConfirmedApproval } =
+    useWaitForTransactionReceipt({
+      chainId: chainId,
+      confirmations: 1,
+      hash: approveHash,
+      query: {
+        enabled: Boolean(approveHash)
+      }
+    });
 
   const {
     data: createEscrowTxHash,
@@ -101,13 +125,96 @@ const NewEscrowTxForm = () => {
       original: values,
       converted: _tokenAmountInBn
     });
-    // try {
-    // } catch (error) {
-    //   console.log("onSubmit: error", { error });
-    // }
+    const contractInfo = {
+      address: "0xd53dD04Eca10f1458D0A860E5FAEF77aDD0B92A1" as Address,
+      abi: EscrowAbi,
+      chainId: 11155111
+    };
+    const tokenContractInfo = {
+      address: values.tokenAddress as Address,
+      abi: testnetErc20Abi,
+      chainId: chainId
+    };
+
+    if (allowance && Number(allowance) < Number(_selectedAmount)) {
+      approveEscrowContract(
+        {
+          ...tokenContractInfo,
+          functionName: "approve",
+          args: [contractInfo.address as Address, _tokenAmountInBn]
+        },
+        {
+          onSuccess: (data) => {
+            console.log("approveEscrowContract:onSuccess:", { data });
+            toast.info("Approval transaction signed, waiting for confirmation");
+          },
+          onError: (error) => {
+            console.log("approveEscrowContract:onError:", { error });
+            toast.error(
+              `Approve Escrow: ${
+                (error as BaseError).shortMessage || error.message
+              }`
+            );
+          }
+        }
+      );
+    } else {
+      createEscrowTx(
+        {
+          ...contractInfo,
+          functionName: "createEscrowTransaction",
+          args: [
+            values.beneficiary as Address,
+            values.tokenAddress as Address,
+            _tokenAmountInBn,
+            BigInt(toUnixTime(values.unlockTime))
+          ]
+        },
+        {
+          onSuccess: (data) => {
+            console.log("createEscrowTransaction:onSuccess:", { data });
+            toast.info(
+              "Create Escrow transaction signed, waiting for confirmation"
+            );
+            form.reset();
+          },
+          onError: (error) => {
+            console.log("createEscrowTransaction:onError:", { error });
+            toast.error(
+              `Create Escrow: ${
+                (error as BaseError).shortMessage || error.message
+              }`
+            );
+          }
+        }
+      );
+    }
   };
-  // initiate read token hook when an token is selected or changed
+
+  const _selectedBeneficiary = form.watch("beneficiary");
   const _selectedToken = form.watch("tokenAddress");
+  const _selectedAmount = form.watch("tokenAmount");
+  const _selectedUnlockTime = form.watch("unlockTime");
+
+  const _txDetailsString = useMemo(() => {
+    const _token = sepoliaAaveReserveTokens.find(
+      (token) => token.address === _selectedToken
+    );
+    if (!_token) return undefined;
+    return {
+      ..._token,
+      beneficiary: _selectedBeneficiary,
+      amount: _selectedAmount,
+      unlockTime: _selectedUnlockTime
+    };
+  }, [
+    _selectedBeneficiary,
+    _selectedToken,
+    _selectedAmount,
+    _selectedUnlockTime
+  ]);
+
+  // initiate read token hook when an token is selected or changed
   useEffect(() => {
     const _fieldState = form.getFieldState("tokenAddress");
     // validate fields
@@ -116,6 +223,7 @@ const NewEscrowTxForm = () => {
       if (tokenAddress !== _selectedToken) {
         setTokenAddress(_selectedToken as Address);
         refetchBalanceOfConnectedAccount();
+        setTokenAllowanceSpender("0xd53dD04Eca10f1458D0A860E5FAEF77aDD0B92A1");
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,20 +235,18 @@ const NewEscrowTxForm = () => {
       toast.success(
         `Escrow transaction success, \n Hash:${createEscrowTxHash}`
       );
-      // refetchAllowance();
+      refetchAllowance();
       refetchBalanceOfConnectedAccount();
-      // refetchUserAgreements();
-      // setIsOpen(false);
+      refetchEscrowTxsMap();
     }
-    // if (isConfirmedApproval) {
-    //   toast.success(`Token Approve transaction success, \n Hash:${approveHash}`);
-    //   refetchAllowance();
-    // }
+    if (isConfirmedApproval) {
+      toast.success(
+        `Token approve transaction success, \n Hash:${approveHash}`
+      );
+      refetchAllowance();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isConfirmedCreateEscrowTx
-    // isConfirmedApproval
-  ]);
+  }, [isConfirmedCreateEscrowTx, isConfirmedApproval]);
 
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
@@ -285,35 +391,134 @@ const NewEscrowTxForm = () => {
             )}
           />
           <Separator />
-
-          <Button
-            disabled={isPendingCreateEscrowTx || isConfirmingCreateEscrowTx}
-            className="w-fit"
-            type="submit"
-          >
-            <div className="flex items-center space-x-1">
-              {isPendingCreateEscrowTx ? (
-                <FileSignature className="mr-2 h-4 w-4 animate-ping" />
-              ) : null}
-              {isConfirmingCreateEscrowTx ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              <p>
-                {isPendingCreateEscrowTx ? "Signing Tx" : null}
-                {isConfirmingCreateEscrowTx ? "Creating Escrow" : null}
-                {!isPendingCreateEscrowTx && !isConfirmingCreateEscrowTx
-                  ? "Create Escrow"
-                  : null}
-              </p>
+          {allowance && Number(allowance) < Number(_selectedAmount) ? (
+            <div className="flex gap-2 items-center">
+              <Button
+                disabled={
+                  isPendingApprove ||
+                  isConfirmingApproval ||
+                  _selectedBeneficiary === address
+                }
+                className="w-fit"
+                type="submit"
+              >
+                <div className="flex items-center space-x-1">
+                  {isPendingApprove ? (
+                    <FileSignature className="mr-2 h-4 w-4 animate-ping" />
+                  ) : null}
+                  {isConfirmingApproval ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  <p>
+                    {isPendingApprove ? "Signing Tx" : null}
+                    {isConfirmingApproval ? "Approving" : null}
+                    {!isPendingApprove && !isConfirmingApproval
+                      ? "Approve"
+                      : null}
+                  </p>
+                </div>
+              </Button>
+              <div className="flex items-center gap-2">
+                <TriangleAlert
+                  className={`${
+                    _selectedBeneficiary === address
+                      ? "text-red-500"
+                      : "text-yellow-500"
+                  } h-8 w-8`}
+                />
+                <p className="text-sm">
+                  {_selectedBeneficiary === address
+                    ? "Beneficiary can not be the same as the initiator, select another address as beneficiary"
+                    : "Approve the escrow contract to spend your tokens on your behalf"}
+                </p>
+              </div>
             </div>
-          </Button>
+          ) : (
+            <div className="flex gap-2 items-center">
+              <Button
+                disabled={
+                  isPendingCreateEscrowTx ||
+                  isConfirmingCreateEscrowTx ||
+                  _selectedBeneficiary === address
+                }
+                className="w-fit"
+                type="submit"
+              >
+                <div className="flex items-center space-x-1">
+                  {isPendingCreateEscrowTx ? (
+                    <FileSignature className="mr-2 h-4 w-4 animate-ping" />
+                  ) : null}
+                  {isConfirmingCreateEscrowTx ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  <p>
+                    {isPendingCreateEscrowTx ? "Signing Tx" : null}
+                    {isConfirmingCreateEscrowTx ? "Creating Escrow" : null}
+                    {!isPendingCreateEscrowTx && !isConfirmingCreateEscrowTx
+                      ? "Create Escrow"
+                      : null}
+                  </p>
+                </div>
+                {_selectedBeneficiary === address && (
+                  <div className="flex items-center gap-2">
+                    <TriangleAlert className="text-red-500 h-8 w-8" />
+                    <p className="text-sm">
+                      Beneficiary can not be the same as the initiator, select
+                      another address as beneficiary
+                    </p>
+                  </div>
+                )}
+              </Button>
+            </div>
+          )}
         </form>
       </Form>
-      <div className="grid gap-2 border rounded-md p-2">
-        <p className="text-2xl font-semibold">Verify Values</p>
-        <div className="flex gap-2 items-center">
-          <p>Will send</p>
-          <p>{form.getValues("tokenAmount")}</p>
+      <div className="flex flex-col gap-2 border rounded-md p-2">
+        <p className="text-2xl font-semibold h-fit">Transaction Details</p>
+        <Separator />
+        <div className="grid gap-2 h-fit">
+          {_txDetailsString ? (
+            <>
+              <div className="flex gap-2 items-center">
+                <p>Will send</p>
+                <p className="font-semibold">{_txDetailsString.amount}</p>
+                <Image
+                  src={_txDetailsString.img}
+                  alt="token-logo"
+                  width={100}
+                  height={100}
+                  className="w-5 h-5"
+                />
+                <p className="font-semibold">{_txDetailsString.name}</p>
+              </div>
+              <div className="flex gap-2 items-center">
+                {" "}
+                <p>To:</p>
+                <p className="font-semibold">
+                  {isMobile
+                    ? shortAddress(_txDetailsString.beneficiary)
+                    : _txDetailsString.beneficiary}
+                </p>
+              </div>
+              {_txDetailsString.unlockTime && (
+                <>
+                  <p>Claimable after:</p>
+                  <p className="font-semibold">
+                    {_txDetailsString.unlockTime.toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false
+                    })}
+                  </p>
+                </>
+              )}
+            </>
+          ) : (
+            <p>Complete the formulary to review the details of it</p>
+          )}
         </div>
       </div>
     </div>

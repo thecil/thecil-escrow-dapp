@@ -16,11 +16,11 @@ export const wagmiConfig = getDefaultConfig({
   chains: [sepolia],
   ssr: true,
   storage: createStorage({
-    storage: cookieStorage,
+    storage: cookieStorage
   }),
   transports: {
     [sepolia.id]: http(sepoliaRpc, {
-      key: "alchemy-sepolia",
-    }),
-  },
+      key: "alchemy-sepolia"
+    })
+  }
 });
