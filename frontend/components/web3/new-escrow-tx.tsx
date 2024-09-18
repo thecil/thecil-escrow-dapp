@@ -52,10 +52,9 @@ import { sepoliaAaveReserveTokens } from "@/lib/aave-contracts";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { Address, parseUnits } from "viem";
-import { EscrowAbi } from "@/lib/abis/escrow-abi";
 import { testnetErc20Abi } from "@/lib/abis/testnetErc20-abi";
 import { toUnixTime } from "@/lib/unix-time";
-import { useReadEscrow } from "@/hooks/web3/contracts/use-read-escrow";
+import { escrowContractInfo, useReadEscrow } from "@/hooks/web3/contracts/use-read-escrow";
 import { useScreenSize } from "@/hooks/use-screen-size";
 import { shortAddress } from "@/lib/web3-utils";
 
@@ -63,7 +62,7 @@ const NewEscrowTxForm = () => {
   const { isMobile } = useScreenSize();
   const chainId = useChainId();
   const { address } = useAccount();
-  const { refetchEscrowTxsMap } = useReadEscrow();
+  const { refetchGetAllEscrowsTx } = useReadEscrow();
   const {
     tokenAddress,
     setTokenAddress,
@@ -125,11 +124,6 @@ const NewEscrowTxForm = () => {
       original: values,
       converted: _tokenAmountInBn
     });
-    const contractInfo = {
-      address: "0xd53dD04Eca10f1458D0A860E5FAEF77aDD0B92A1" as Address,
-      abi: EscrowAbi,
-      chainId: 11155111
-    };
     const tokenContractInfo = {
       address: values.tokenAddress as Address,
       abi: testnetErc20Abi,
@@ -141,7 +135,7 @@ const NewEscrowTxForm = () => {
         {
           ...tokenContractInfo,
           functionName: "approve",
-          args: [contractInfo.address as Address, _tokenAmountInBn]
+          args: [escrowContractInfo.address as Address, _tokenAmountInBn]
         },
         {
           onSuccess: (data) => {
@@ -161,7 +155,7 @@ const NewEscrowTxForm = () => {
     } else {
       createEscrowTx(
         {
-          ...contractInfo,
+          ...escrowContractInfo,
           functionName: "createEscrowTransaction",
           args: [
             values.beneficiary as Address,
@@ -223,7 +217,7 @@ const NewEscrowTxForm = () => {
       if (tokenAddress !== _selectedToken) {
         setTokenAddress(_selectedToken as Address);
         refetchBalanceOfConnectedAccount();
-        setTokenAllowanceSpender("0xd53dD04Eca10f1458D0A860E5FAEF77aDD0B92A1");
+        setTokenAllowanceSpender(escrowContractInfo.address);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -237,7 +231,7 @@ const NewEscrowTxForm = () => {
       );
       refetchAllowance();
       refetchBalanceOfConnectedAccount();
-      refetchEscrowTxsMap();
+      refetchGetAllEscrowsTx();
     }
     if (isConfirmedApproval) {
       toast.success(

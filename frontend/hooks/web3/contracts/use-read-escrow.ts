@@ -1,22 +1,30 @@
 import { Address, formatEther } from "@/lib/web3-utils";
 import { EscrowAbi } from "@/lib/abis/escrow-abi";
-import { useReadContract } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
+import { useState } from "react";
+
+export const escrowContractInfo = {
+  address: "0xD018195Faeb8739Fa5F11Cf93E1D2E267D4Db661" as Address,
+  abi: EscrowAbi,
+  chainId: 11155111
+};
 
 export const useReadEscrow = () => {
-  const contractInfo = {
-    address: "0xd53dD04Eca10f1458D0A860E5FAEF77aDD0B92A1" as Address,
-    abi: EscrowAbi,
-    chainId: 11155111
-  };
+  const [escrowTxId, setEscrowTxId] = useState<string>("0");
+  const { address, isConnected } = useAccount();
 
   const {
-    data: escrowTxsMap,
-    refetch: refetchEscrowTxsMap,
-    isLoading: isLoadingEscrowTxsMap,
-    error: EscrowTxsMapError
+    data: getEscrowTransaction,
+    refetch: refetchGetEscrowTransaction,
+    isLoading: isLoadingGetEscrowTransaction,
+    error: getEscrowTransactionError
   } = useReadContract({
-    ...contractInfo,
-    functionName: "escrowTxsMap"
+    ...escrowContractInfo,
+    functionName: "getEscrowTransaction",
+    args: [BigInt(escrowTxId)],
+    query: {
+      enabled: Boolean(escrowTxId !== "0")
+    }
   });
 
   const {
@@ -26,12 +34,47 @@ export const useReadEscrow = () => {
     error: contractEtherBalanceError,
     queryKey: contractEtherBalanceQueryKey
   } = useReadContract({
-    ...contractInfo,
+    ...escrowContractInfo,
     functionName: "getContractEtherBalance",
     query: {
       select(data) {
         return formatEther(data);
       }
+    }
+  });
+
+  const {
+    data: getAllEscrowsTx,
+    refetch: refetchGetAllEscrowsTx,
+    isLoading: isLoadingGetAllEscrowsTx,
+    error: getAllEscrowsTxError
+  } = useReadContract({
+    ...escrowContractInfo,
+    functionName: "getAllEscrowsTx",
+    query: {
+      select(data) {
+        const _escrowsTx = data.map((escrowTx, index) => {
+          return {
+            id: index + 1,
+            ...escrowTx
+          };
+        });
+        return _escrowsTx;
+      }
+    }
+  });
+
+  const {
+    data: getUserEscrows,
+    refetch: refetchGetUserEscrows,
+    isLoading: isLoadingGetUserEscrows,
+    error: getUserEscrowsError
+  } = useReadContract({
+    ...escrowContractInfo,
+    functionName: "getUserEscrows",
+    args: [address as Address],
+    query: {
+      enabled: Boolean(address && isConnected)
     }
   });
 
@@ -41,9 +84,19 @@ export const useReadEscrow = () => {
     isLoadingContractEtherBalance,
     contractEtherBalanceError,
     contractEtherBalanceQueryKey,
-    escrowTxsMap,
-    refetchEscrowTxsMap,
-    isLoadingEscrowTxsMap,
-    EscrowTxsMapError
+    escrowTxId,
+    setEscrowTxId,
+    getEscrowTransaction,
+    refetchGetEscrowTransaction,
+    isLoadingGetEscrowTransaction,
+    getEscrowTransactionError,
+    getUserEscrows,
+    refetchGetUserEscrows,
+    isLoadingGetUserEscrows,
+    getUserEscrowsError,
+    getAllEscrowsTx,
+    refetchGetAllEscrowsTx,
+    isLoadingGetAllEscrowsTx,
+    getAllEscrowsTxError
   };
 };
