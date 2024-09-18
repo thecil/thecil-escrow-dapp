@@ -1,24 +1,8 @@
-import { useState } from "react";
 import { useReadEscrow } from "@/hooks/web3/contracts/use-read-escrow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-// import {
-//   Table,
-//   TableBody,
-//   TableCell,
-//   TableHead,
-//   TableHeader,
-//   TableRow
-// } from "@/components/ui/table";
 import NewEscrowTx from "../web3/new-escrow-tx";
 import Faucet from "../web3/faucet";
+import EscrowTxTable from "../web3/escrow-tx-table";
 
 const transactions = [
   {
@@ -59,14 +43,8 @@ const transactions = [
 ];
 
 export default function EscrowDashboard() {
-  const [filter, setFilter] = useState("All");
   const { contractEtherBalance } = useReadEscrow();
-  // const filteredTransactions =
-  //   filter === "All"
-  //     ? transactions
-  //     : transactions.filter((t) => t.status === filter);
 
-  // const totalEscrow = transactions.reduce((sum, t) => sum + t.amount, 0);
   const pendingEscrow = transactions
     .filter((t) => t.status === "Pending")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -113,65 +91,8 @@ export default function EscrowDashboard() {
         </Card>
       </div>
       <Faucet />
-      <div>
-        <NewEscrowTx />
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Step 3 - Manage Your Escrow Transactions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-between mb-4">
-            <div className="w-1/3">
-              <Input type="text" placeholder="Search transactions..." />
-            </div>
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="In Progress">In Progress</SelectItem>
-                <SelectItem value="Completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTransactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>{transaction.description}</TableCell>
-                  <TableCell>${transaction.amount.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        transaction.status === "Completed"
-                          ? "bg-green-100 text-green-800"
-                          : transaction.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {transaction.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>{transaction.date}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table> */}
-        </CardContent>
-      </Card>
+      <NewEscrowTx />
+      <EscrowTxTable />
     </main>
   );
 }
