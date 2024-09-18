@@ -117,6 +117,28 @@ abstract contract EscrowVariables {
     |         Getter Functions          |
     |__________________________________*/
 
+    /// @notice Get all escrows tx
+    /// @dev return an array of EscrowTransactions looping through the escrowTxsMap mapping where the max length is counterEscrowTransactions.
+    /// @return EscrowTransaction[] array of all escrows tx
+    function getAllEscrowsTx()
+        public
+        view
+        returns (EscrowTransaction[] memory)
+    {
+        uint256 numTxs = counterEscrowTransactions;
+        EscrowTransaction[] memory escrowTxsArray = new EscrowTransaction[](
+            numTxs
+        );
+
+        for (uint256 i = 0; i < numTxs; i++) {
+            // incresae 1 to avoid index 0, since the first escrow tx created will be stored on index 1 and so on from that point.
+            EscrowTransaction storage escrowTx = escrowTxsMap[i + 1];
+            escrowTxsArray[i] = escrowTx;
+        }
+
+        return escrowTxsArray;
+    }
+
     /// @notice Get the active escrow tx between 2 accounts
     /// @dev returns the activeUserBeneficiaryEscrowTxMap mapping.
     /// @return uint active escrow tx id

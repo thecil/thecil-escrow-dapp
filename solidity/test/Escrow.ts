@@ -261,6 +261,7 @@ describe("Escrow", function () {
         escrowContract,
         owner,
         acc1,
+        acc2,
         publicClient,
         testnetTokens,
         faucet,
@@ -294,6 +295,17 @@ describe("Escrow", function () {
         BigInt(_timeLock),
       ]);
 
+      await escrowContract.write.createEscrowTransaction([
+        acc2.account.address,
+        sepoliaAaveReserveTokens.dai,
+        parseEther("100"),
+        BigInt(_timeLock),
+      ]);
+
+      const _getAllEscrowsTx = await escrowContract.read.getAllEscrowsTx();
+
+      console.log("_getAllEscrowsTx", _getAllEscrowsTx);
+      
       await mine(10, { interval: 1000 });
 
       // balance before approval
@@ -423,7 +435,7 @@ describe("Escrow", function () {
       );
     });
 
-    it.only("Should create and dispute an escrow tx", async function () {
+    it("Should create and dispute an escrow tx", async function () {
       const {
         escrowContract,
         faucet,
