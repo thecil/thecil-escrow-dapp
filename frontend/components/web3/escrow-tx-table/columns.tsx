@@ -9,21 +9,20 @@ import { sepoliaAaveReserveTokens } from "@/lib/aave-contracts";
 import Image from "next/image";
 import { useReadToken } from "@/hooks/web3/contracts/use-read-token";
 import { useEffect } from "react";
-import { unixNow, unixToDateTime } from "@/lib/unix-time";
-import { Button } from "@/components/ui/button";
+import { unixToDateTime } from "@/lib/unix-time";
+import ApproveEscrowButton from "../escrow-buttons/approve-escrow-btn";
+import CancelEscrowButton from "../escrow-buttons/cancel-escrow-btn";
+import DisputeEscrowButton from "../escrow-buttons/dispute-escrow-btn";
+import { useAccount } from "wagmi";
 
 const EscrowActionButtons = ({ escrowTx }: { escrowTx: EscrowTx }) => {
-  const _isClaimable = escrowTx.unlockTime < BigInt(unixNow());
-  if (escrowTx.status !== 1 && escrowTx.status !== 2) {
-    return (
-      <div className="flex gap-2 items-center">
-        {escrowTx.status === 0 && _isClaimable && <Button size="sm">Approve</Button>}
-        <Button size="sm" variant="destructive">Cancel</Button>
-        <Button size="sm" variant="outline">Dispute</Button>
-      </div>
-    );
-  }
-  return null;
+  return (
+    <div className="flex gap-2 items-center">
+      <ApproveEscrowButton escrowTx={escrowTx} />
+      <CancelEscrowButton escrowTx={escrowTx} />
+      <DisputeEscrowButton escrowTx={escrowTx} />
+    </div>
+  );
 };
 
 const TokenAmount = ({
@@ -55,6 +54,13 @@ const badgeVariantByStatus = (_status: number) => {
       return "warning";
   }
 };
+
+const ConnectedParticipant = ({ account }: { account: Address }) => {
+  const { address } = useAccount();
+  if (address && address === account) return <p>You</p>;
+  return <p>{shortAddress(account)}</p>;
+};
+
 export const columns: ColumnDef<EscrowTx>[] = [
   {
     accessorKey: "status",
@@ -66,9 +72,18 @@ export const columns: ColumnDef<EscrowTx>[] = [
     )
   },
   {
+    accessorKey: "initiator",
+    header: "From",
+    cell: ({ row }) => (
+      <ConnectedParticipant account={row.original.initiator} />
+    )
+  },
+  {
     accessorKey: "beneficiary",
-    header: "Beneficiary",
-    cell: ({ row }) => <p>{shortAddress(row.original.beneficiary)}</p>
+    header: "To",
+    cell: ({ row }) => (
+      <ConnectedParticipant account={row.original.beneficiary} />
+    )
   },
   {
     accessorKey: "tokenAddr",
