@@ -24,7 +24,7 @@ const EscrowTxTable = () => {
   const _userEscrows = useMemo(() => {
     if (!getAllEscrowsTx) return undefined;
     const _escrows = getAllEscrowsTx.filter(
-      (escrowTx) => escrowTx.initiator === address
+      (escrowTx) => escrowTx.initiator === address || escrowTx.beneficiary === address
     );
     return _escrows;
   }, [getAllEscrowsTx, address]);
