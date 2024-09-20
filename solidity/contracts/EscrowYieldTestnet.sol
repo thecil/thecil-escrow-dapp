@@ -153,7 +153,7 @@ contract EscrowYieldTestnet is
         uint _escrowTxId
     )
         public
-        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Created)
+        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Created, false)
         whenNotPaused
     {
         // verify escrow tx
@@ -177,7 +177,7 @@ contract EscrowYieldTestnet is
         uint _escrowTxId
     )
         public
-        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Created)
+        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Created, false)
         whenNotPaused
     {
         // verify escrow tx
@@ -199,7 +199,7 @@ contract EscrowYieldTestnet is
         uint _escrowTxId
     )
         external
-        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Created)
+        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Created, true)
         whenNotPaused
     {
         // verify escrow tx
@@ -215,10 +215,9 @@ contract EscrowYieldTestnet is
         uint _escrowTxId
     )
         external
-        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Dispute)
+        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Dispute, false)
         whenNotPaused
     {
-        // verify escrow tx
         EscrowTransaction storage _escrowTx = escrowTxsMap[_escrowTxId];
         // change status to Created
         _escrowTx.status = EscrowStatus.Created;
@@ -232,9 +231,12 @@ contract EscrowYieldTestnet is
         uint _escrowTxId
     )
         external
-        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Dispute)
+        validateEscrowTx(_msgSender(), _escrowTxId, EscrowStatus.Dispute, false)
         whenNotPaused
     {
+        EscrowTransaction storage _escrowTx = escrowTxsMap[_escrowTxId];
+        // change status to Created
+        _escrowTx.status = EscrowStatus.Created;
         cancelEscrowTransaction(_escrowTxId);
     }
 
@@ -265,25 +267,6 @@ contract EscrowYieldTestnet is
     ) external onlyOwner nonReentrant {
         IERC20 token = IERC20(_tokenAddr);
         token.transferFrom(address(this), _to, _amount);
-    }
-
-    /// @notice Returns the user account data across all the reserves
-    /// @param _user user account address.
-    function getUserAccountData(
-        address _user
-    )
-        external
-        view
-        returns (
-            uint256 totalCollateralBase,
-            uint256 totalDebtBase,
-            uint256 availableBorrowsBase,
-            uint256 currentLiquidationThreshold,
-            uint256 ltv,
-            uint256 healthFactor
-        )
-    {
-        return POOL.getUserAccountData(_user);
     }
 
     receive() external payable {}

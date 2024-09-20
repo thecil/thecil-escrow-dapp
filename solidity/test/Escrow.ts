@@ -302,9 +302,9 @@ describe("Escrow", function () {
         BigInt(_timeLock),
       ]);
 
-      const _getAllEscrowsTx = await escrowContract.read.getAllEscrowsTx();
+      // const _getAllEscrowsTx = await escrowContract.read.getAllEscrowsTx();
 
-      console.log("_getAllEscrowsTx", _getAllEscrowsTx);
+      // console.log("_getAllEscrowsTx", _getAllEscrowsTx);
       
       await mine(10, { interval: 1000 });
 
@@ -442,6 +442,7 @@ describe("Escrow", function () {
         testnetTokens,
         owner,
         acc1,
+        acc2,
         publicClient,
       } = await loadFixture(deployEscrowFixture);
       // 1 minute time lock
@@ -478,11 +479,11 @@ describe("Escrow", function () {
         owner.account.address,
         acc1.account.address,
       ]);
-      // should reject cancel if method is called by beneficiary or any other account
+      // should reject cancel if method is called by any other account that is not participant in the escrow tx
       const escrowContractAsOtherAccount = await hre.viem.getContractAt(
         "EscrowYieldTestnet",
         escrowContract.address,
-        { client: { wallet: acc1 } }
+        { client: { wallet: acc2 } }
       );
 
       await expect(

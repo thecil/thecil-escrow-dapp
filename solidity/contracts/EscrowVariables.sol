@@ -15,12 +15,21 @@ abstract contract EscrowVariables {
     modifier validateEscrowTx(
         address _msgSender,
         uint _escrowTxId,
-        EscrowStatus _status
+        EscrowStatus _status,
+        bool checkParticipants
     ) {
         // verify escrow tx
         EscrowTransaction storage _escrowTx = escrowTxsMap[_escrowTxId];
-        if (_msgSender != _escrowTx.initiator)
-            revert OnlyEscrowTxInitiatorAllowed();
+        if (checkParticipants) {
+            if (
+                _msgSender != _escrowTx.initiator &&
+                _msgSender != _escrowTx.beneficiary
+            ) revert OnlyEscrowTxParticipantAllowed();
+        } else {
+            if (_msgSender != _escrowTx.initiator)
+                revert OnlyEscrowTxInitiatorAllowed();
+        }
+
         if (_escrowTx.status != _status)
             revert IncorrectEscrowTxStatus(_escrowTx.status);
         _;
@@ -37,6 +46,8 @@ abstract contract EscrowVariables {
     error TokenNotSupported(address);
     /// @dev Only escrow tx initiator allowed
     error OnlyEscrowTxInitiatorAllowed();
+    /// @dev Only escrow tx participant allowed
+    error OnlyEscrowTxParticipantAllowed();
     /// @dev Active escrow tx between users (escrow tx id, user, beneficiary)
     error AlreadyActiveEscrowTx(uint, address, address);
     /// @dev Incorrect escrow tx status (escrow tx id)
