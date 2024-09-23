@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "../ui/button";
-import { FileSignature, Loader2, TriangleAlert } from "lucide-react";
+import { FileBadge2, FileSignature, Loader2, TriangleAlert } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -54,7 +54,10 @@ import { Separator } from "@/components/ui/separator";
 import { Address, parseUnits } from "viem";
 import { testnetErc20Abi } from "@/lib/abis/testnetErc20-abi";
 import { toUnixTime } from "@/lib/unix-time";
-import { escrowContractInfo, useReadEscrow } from "@/hooks/web3/contracts/use-read-escrow";
+import {
+  escrowContractInfo,
+  useReadEscrow
+} from "@/hooks/web3/contracts/use-read-escrow";
 import { useScreenSize } from "@/hooks/use-screen-size";
 import { shortAddress } from "@/lib/web3-utils";
 
@@ -522,7 +525,12 @@ const NewEscrowTx = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Step 2 - Create a new Escrow Transaction</CardTitle>
+        <CardTitle>
+          <div className="flex gap-2 items-center">
+            <FileBadge2 className="h-6 w-6" />
+            <p>Step 2 - Create a new Escrow Transaction</p>
+          </div>
+        </CardTitle>
         <CardDescription className="w-48 md:w-full">
           Check your token balances or mint tokens if your empty.
         </CardDescription>
