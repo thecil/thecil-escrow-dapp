@@ -59,7 +59,7 @@ const ApproveEscrowButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
           console.log("approveEscrowTransaction:onError:", { error });
           toast.error(
             `Error on Approve Escrow: ${
-              (error as BaseError).shortMessage || error.message
+              (error as BaseError).metaMessages?.at(0) || error.message
             }`
           );
         }
@@ -80,6 +80,7 @@ const ApproveEscrowButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
     <>
       {_isUnlocked && (
         <Button
+          size={"sm"}
           disabled={isPendingApproveEscrow || isConfirmingApproveEscrow}
           onMouseDown={handleApproval}
         >

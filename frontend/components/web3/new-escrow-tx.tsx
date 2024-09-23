@@ -176,7 +176,7 @@ const NewEscrowTxForm = () => {
             console.log("createEscrowTransaction:onError:", { error });
             toast.error(
               `Create Escrow: ${
-                (error as BaseError).shortMessage || error.message
+                (error as BaseError).metaMessages?.at(0) || error.message
               }`
             );
           }

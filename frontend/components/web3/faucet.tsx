@@ -79,7 +79,7 @@ const TokenController = ({ token }: { token: AaveTokens }) => {
           console.log("mintToken:onError:", { error });
           toast.error(
             `Error on minting: ${token.name} - ${
-              (error as BaseError).shortMessage || error.message
+              (error as BaseError).metaMessages?.at(0) || error.message
             }`
           );
         }

@@ -53,7 +53,7 @@ const CancelEscrowButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
           console.log("cancelEscrowTransaction:onError:", { error });
           toast.error(
             `Error on Cancel Escrow: ${
-              (error as BaseError).shortMessage || error.message
+              (error as BaseError).metaMessages?.at(0) || error.message
             }`
           );
         }
@@ -74,6 +74,7 @@ const CancelEscrowButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
     <>
       {escrowTx.status === EscrowStatusEnum.Created && _isInitiator && (
         <Button
+          size={"sm"}
           variant={"destructive"}
           disabled={isPendingCancelEscrow || isConfirmingCancelEscrow}
           onMouseDown={handleCancel}
