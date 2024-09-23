@@ -264,7 +264,7 @@ contract EscrowYieldTestnet is
         address _tokenAddr,
         address _to,
         uint256 _amount
-    ) external onlyOwner nonReentrant {
+    ) external onlyOwner nonReentrant whenPaused {
         IERC20 token = IERC20(_tokenAddr);
         token.transferFrom(address(this), _to, _amount);
     }
