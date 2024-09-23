@@ -14,6 +14,7 @@ import ApproveEscrowButton from "../escrow-buttons/approve-escrow-btn";
 import CancelEscrowButton from "../escrow-buttons/cancel-escrow-btn";
 import DisputeEscrowButton from "../escrow-buttons/dispute-escrow-btn";
 import { useAccount } from "wagmi";
+import { UserCircle2 } from "lucide-react";
 
 const EscrowActionButtons = ({ escrowTx }: { escrowTx: EscrowTx }) => {
   return (
@@ -57,7 +58,13 @@ const badgeVariantByStatus = (_status: number) => {
 
 const ConnectedParticipant = ({ account }: { account: Address }) => {
   const { address } = useAccount();
-  if (address && address === account) return <p>You</p>;
+  if (address && address === account)
+    return (
+      <div className="flex gap-2 items-center">
+        <UserCircle2 className="h-4 w-4" />
+        <p>You</p>
+      </div>
+    );
   return <p>{shortAddress(account)}</p>;
 };
 
