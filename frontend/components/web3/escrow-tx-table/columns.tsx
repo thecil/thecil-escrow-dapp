@@ -76,7 +76,8 @@ export const columns: ColumnDef<EscrowTx>[] = [
       <Badge variant={badgeVariantByStatus(row.original.status)}>
         {EscrowStatus[row.original.status]}
       </Badge>
-    )
+    ),
+    accessorFn: (row) => EscrowStatus[row.status]
   },
   {
     accessorKey: "initiator",
