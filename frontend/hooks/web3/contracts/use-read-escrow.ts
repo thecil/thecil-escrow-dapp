@@ -4,7 +4,7 @@ import { useAccount, useReadContract } from "wagmi";
 import { useState } from "react";
 
 export const escrowContractInfo = {
-  address: "0xD018195Faeb8739Fa5F11Cf93E1D2E267D4Db661" as Address,
+  address: "0x665dd99C20A84acD35D6108f911e64cc36bc5102" as Address,
   abi: EscrowAbi,
   chainId: 11155111
 };
