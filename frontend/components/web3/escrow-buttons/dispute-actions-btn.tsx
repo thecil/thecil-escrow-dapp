@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { EscrowTx, EscrowStatusEnum } from "@/types/escrow";
 import {
-  escrowContractInfo,
   useReadEscrow
 } from "@/hooks/web3/contracts/use-read-escrow";
 import { FileSignature, Loader2 } from "lucide-react";
@@ -14,6 +13,7 @@ import {
   useWriteContract
 } from "wagmi";
 import { unixNow } from "@/lib/unix-time";
+import { escrowContractInfo } from "@/config/global-config";
 
 const DisputeActionsButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
   const { address } = useAccount();

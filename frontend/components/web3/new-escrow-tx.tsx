@@ -55,11 +55,11 @@ import { Address, parseUnits } from "viem";
 import { testnetErc20Abi } from "@/lib/abis/testnetErc20-abi";
 import { toUnixTime } from "@/lib/unix-time";
 import {
-  escrowContractInfo,
   useReadEscrow
 } from "@/hooks/web3/contracts/use-read-escrow";
 import { useScreenSize } from "@/hooks/use-screen-size";
 import { shortAddress } from "@/lib/web3-utils";
+import { escrowContractInfo } from "@/config/global-config";
 
 const NewEscrowTxForm = () => {
   const { isMobile } = useScreenSize();

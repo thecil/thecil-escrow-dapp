@@ -1,13 +1,7 @@
 import { Address, formatEther } from "@/lib/web3-utils";
-import { EscrowAbi } from "@/lib/abis/escrow-abi";
 import { useAccount, useReadContract } from "wagmi";
 import { useState } from "react";
-
-export const escrowContractInfo = {
-  address: "0x665dd99C20A84acD35D6108f911e64cc36bc5102" as Address,
-  abi: EscrowAbi,
-  chainId: 11155111
-};
+import { escrowContractInfo } from "@/config/global-config";
 
 export const useReadEscrow = () => {
   const [escrowTxId, setEscrowTxId] = useState<string>("0");

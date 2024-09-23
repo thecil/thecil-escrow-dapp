@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  escrowContractInfo,
   useReadEscrow
 } from "@/hooks/web3/contracts/use-read-escrow";
 import { EscrowStatusEnum, EscrowTx } from "@/types/escrow";
@@ -16,6 +15,7 @@ import {
   useWriteContract
 } from "wagmi";
 import DisputeActionsButton from "./dispute-actions-btn";
+import { escrowContractInfo } from "@/config/global-config";
 
 const DisputeEscrowButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
   const { address } = useAccount();

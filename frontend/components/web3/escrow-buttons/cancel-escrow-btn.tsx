@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { EscrowTx, EscrowStatusEnum } from "@/types/escrow";
 import {
-  escrowContractInfo,
   useReadEscrow
 } from "@/hooks/web3/contracts/use-read-escrow";
 import { FileSignature, Loader2 } from "lucide-react";
@@ -13,6 +12,7 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract
 } from "wagmi";
+import { escrowContractInfo } from "@/config/global-config";
 
 const CancelEscrowButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
   const { address } = useAccount();

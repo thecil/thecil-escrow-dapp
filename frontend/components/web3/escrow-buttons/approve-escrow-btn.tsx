@@ -1,10 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  escrowContractInfo,
-  useReadEscrow
-} from "@/hooks/web3/contracts/use-read-escrow";
+import { escrowContractInfo } from "@/config/global-config";
+import { useReadEscrow } from "@/hooks/web3/contracts/use-read-escrow";
 import { unixNow } from "@/lib/unix-time";
 import { EscrowStatusEnum, EscrowTx } from "@/types/escrow";
 import { FileSignature, Loader2 } from "lucide-react";
