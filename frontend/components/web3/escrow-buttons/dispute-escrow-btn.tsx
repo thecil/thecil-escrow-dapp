@@ -5,7 +5,6 @@ import {
   escrowContractInfo,
   useReadEscrow
 } from "@/hooks/web3/contracts/use-read-escrow";
-import { unixNow } from "@/lib/unix-time";
 import { EscrowStatusEnum, EscrowTx } from "@/types/escrow";
 import { FileSignature, Loader2 } from "lucide-react";
 import React, { useEffect } from "react";
@@ -16,13 +15,14 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract
 } from "wagmi";
+import DisputeActionsButton from "./dispute-actions-btn";
 
 const DisputeEscrowButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
   const { address } = useAccount();
   const { refetchGetAllEscrowsTx } = useReadEscrow();
+  const _isBeneficiary = Boolean(address && address === escrowTx.beneficiary);
   const _isInitiator = Boolean(address && address === escrowTx.initiator);
-  const _isUnlocked = Boolean(escrowTx.unlockTime < BigInt(unixNow()));
-
+  const _isParticipant = Boolean(_isBeneficiary || _isInitiator);
   const {
     data: disputeEscrowHash,
     isPending: isPendingDisputeEscrow,
@@ -57,7 +57,7 @@ const DisputeEscrowButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
           console.log("initiateDispute:onError:", { error });
           toast.error(
             `Error on Dispute Escrow: ${
-              (error as BaseError).shortMessage || error.message
+              (error as BaseError).metaMessages?.at(0) || error.message
             }`
           );
         }
@@ -77,7 +77,7 @@ const DisputeEscrowButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
 
   return (
     <>
-      {escrowTx.status === EscrowStatusEnum.Created && _isInitiator && (
+      {escrowTx.status === EscrowStatusEnum.Created && _isParticipant && (
         <Button
           variant={"secondary"}
           disabled={isPendingDisputeEscrow || isConfirmingDisputeEscrow}
@@ -100,12 +100,8 @@ const DisputeEscrowButton = ({ escrowTx }: { escrowTx: EscrowTx }) => {
           </div>
         </Button>
       )}
-      {escrowTx.status === EscrowStatusEnum.Dispute &&
-        _isInitiator && (
-        <>
-          {_isUnlocked && <Button variant={"secondary"}>Approve Dispute</Button>}
-          <Button variant={"secondary"}>Cancel Dispute</Button>
-        </>
+      {escrowTx.status === EscrowStatusEnum.Dispute && _isInitiator && (
+        <DisputeActionsButton escrowTx={escrowTx} />
       )}
     </>
   );
