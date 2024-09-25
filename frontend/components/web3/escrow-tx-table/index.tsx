@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useReadEscrow } from "@/hooks/web3/contracts/use-read-escrow";
 
 import { columns } from "./columns";
@@ -18,9 +18,6 @@ const EscrowTxTable = () => {
     getAllEscrowsTxError
   } = useReadEscrow();
   const { address } = useAccount();
-  useEffect(() => {
-    console.log("getAllEscrowsTx", { getAllEscrowsTx });
-  }, [getAllEscrowsTx]);
 
   const _userEscrows = useMemo(() => {
     if (!getAllEscrowsTx) return undefined;
