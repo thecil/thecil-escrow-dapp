@@ -2,6 +2,10 @@
 
 ![Escrow DApp](/frontend/public/landing_image.jpg)
 
+## Authors
+- [@thecil](https://github.com/thecil) - Carlos Zambrano
+- [@dadogg80](https://github.com/dadogg80) - Ivo Garofalo
+
 ## About This Project
 
 This full-stack decentralized application was developed as part of the **Alchemy University Ethereum Developer Bootcamp**. It implements a smart contract escrow system with a modern web interface, enhanced by Aave's yield-generating capabilities to earn interest on funds while in escrow.
