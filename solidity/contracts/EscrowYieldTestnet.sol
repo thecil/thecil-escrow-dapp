@@ -16,7 +16,7 @@ import {Errors} from "@aave/core-v3/contracts/protocol/libraries/helpers/Errors.
 import "./EscrowVariables.sol";
 
 /// @title An escrow contract with yield from aave
-/// @author thecil - Carlos Zambrano
+/// @author @thecil - Carlos Zambrano, @Dadogg80 - Ivo Garofalo
 /// @notice Allow an user to create an escrow transaction with a timelock and in the mean time, the funds are being yield on AAVE.
 /// @dev AAVE testnet tokens supported, escrow tx funds deposited to aave pool for yield.
 contract EscrowYieldTestnet is

@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IAToken} from "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
 /// @title An abstract contract that includes all variables of its parents.
-/// @author thecil - Carlos Zambrano
+/// @author thecil - Carlos Zambrano, @Dadogg80 - Ivo Garofalo
 /// @notice Variables enums, structs, events, mappings and their getters used by its parent contract (escrow contract)
 /// @dev It store all variable declarations for better view of parent contract.
 abstract contract EscrowVariables {
