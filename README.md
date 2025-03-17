@@ -37,7 +37,7 @@ This project consists of two main components:
 ## Live Demo
 
 The application is deployed on Sepolia testnet:
-- Frontend: [Coming Soon]
+- Frontend: [https://thecil-escrow-dapp.vercel.app/](https://thecil-escrow-dapp.vercel.app/)
 - Smart Contract: [`0x665dd99C20A84acD35D6108f911e64cc36bc5102`](https://sepolia.etherscan.io/address/0x665dd99C20A84acD35D6108f911e64cc36bc5102#code)
 
 ## Supported Tokens
