@@ -101,7 +101,7 @@ The application supports the following tokens on Aave v3 (Sepolia):
 3. Create a `.env.local` file with the following variables:
    ```
    NEXT_PUBLIC_WALLETCONNECT_ID=your_walletconnect_project_id
-   NEXT_PUBLIC_ALCHEMY_ID=your_alchemy_api_key
+   NEXT_PUBLIC_ALCHEMY_RPC=your_alchemy_api_key
    ```
 
 4. Run the development server:
